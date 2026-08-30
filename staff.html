@@ -85,7 +85,8 @@
 
 <script>
 const API_URL = 'https://salon-booking-system.osamajunaid.workers.dev';
-const RATE_PAGE_URL = 'PASTE_YOUR_RATE_PAGE_URL_HERE'; // e.g. https://osamajunaid15.github.io/salon/rate.html
+const RATE_PAGE_URL = 'https://osamajunaid15.github.io/new-smart-look-salon/rate.html';
+const BOOKING_PAGE_URL = 'https://osamajunaid15.github.io/new-smart-look-salon/booking.html';
 
 const params = new URLSearchParams(window.location.search);
 const STAFF_ID = params.get('staff');
@@ -163,7 +164,7 @@ function notifyReady(phone, name){
 async function markComplete(id, phone, name){
   await apiPost('/complete', { bookingId:id });
   const rateLink = RATE_PAGE_URL + '?id=' + id;
-  const msg = `Shukriya ${name}! Umeed hai service pasand aayi hogi. Apna anubhav rate karein: ${rateLink} — ${SALON_NAME}`;
+  const msg = `Shukriya ${name}! Umeed hai service pasand aayi hogi. Apna anubhav rate karein: ${rateLink}\n\nAgli baar dobara booking ke liye yeh link use karein: ${BOOKING_PAGE_URL} — ${SALON_NAME}`;
   window.open('https://wa.me/' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
   load();
 }

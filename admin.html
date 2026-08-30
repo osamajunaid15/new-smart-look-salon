@@ -170,8 +170,8 @@
 
 <script>
 const API_URL = 'https://salon-booking-system.osamajunaid.workers.dev'; // e.g. https://salon-booking-system.yourname.workers.dev
-const RATE_PAGE_URL = 'PASTE_YOUR_RATE_PAGE_URL_HERE'; // e.g. https://osamajunaid15.github.io/salon/rate.html
-const BOOKING_PAGE_URL = 'PASTE_YOUR_BOOKING_PAGE_URL_HERE'; // e.g. https://osamajunaid15.github.io/salon/booking.html
+const RATE_PAGE_URL = 'https://osamajunaid15.github.io/new-smart-look-salon/rate.html'; // e.g. https://osamajunaid15.github.io/salon/rate.html
+const BOOKING_PAGE_URL = 'https://osamajunaid15.github.io/new-smart-look-salon/booking.html'; // e.g. https://osamajunaid15.github.io/salon/booking.html
 let INIT = null;
 
 async function apiGet(path, params){
@@ -350,7 +350,7 @@ function notifyReady(phone, name, staffName){
 async function completeBooking(id, phone, name, staffName){
   await apiPost('/complete', {bookingId:id});
   const rateLink = RATE_PAGE_URL + '?id=' + id;
-  const msg = `Shukriya ${name}! Umeed hai ${staffName} ki service pasand aayi hogi. Apna anubhav rate karein: ${rateLink} — ${INIT.salonName}`;
+  const msg = `Shukriya ${name}! Umeed hai ${staffName} ki service pasand aayi hogi. Apna anubhav rate karein: ${rateLink}\n\nAgli baar dobara booking ke liye yeh link use karein: ${BOOKING_PAGE_URL} — ${INIT.salonName}`;
   window.open('https://wa.me/' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
   loadBookings();
 }

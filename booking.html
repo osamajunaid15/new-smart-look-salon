@@ -319,7 +319,8 @@
 <script>
 /* ================= CONFIG ================= */
 const API_URL = 'https://salon-booking-system.osamajunaid.workers.dev';
-const CANCEL_PAGE_URL = 'PASTE_YOUR_CANCEL_PAGE_URL_HERE'; // e.g. https://osamajunaid15.github.io/salon/cancel.html
+const CANCEL_PAGE_URL = 'https://osamajunaid15.github.io/new-smart-look-salon/cancel.html';
+const SALON_WHATSAPP = '923002104011'; // salon's own WhatsApp number, no + or spaces
 /* =========================================== */
 
 let INIT = null;
@@ -739,7 +740,7 @@ async function submitBooking(){
 function renderStep6(res){
   state.step = 6; renderProgress();
   const msg = `Booking Confirmed ✅\n${res.salonName}\nService: ${res.serviceName}\nWith: ${res.staffName}\nDate: ${res.date}\nTime: ${formatTime(res.time)} - ${formatTime(res.endTime)}\nName: ${state.name}\nBooking ID: ${res.bookingId}\n\nCancel karna ho to: ${CANCEL_PAGE_URL}?id=${res.bookingId}`;
-  const waLink = 'https://wa.me/?text=' + encodeURIComponent(msg);
+  const waLink = 'https://wa.me/' + SALON_WHATSAPP + '?text=' + encodeURIComponent(msg);
 
   let html = `
     <div class="confirm-hero">
@@ -753,7 +754,7 @@ function renderStep6(res){
       <div class="summary-row"><span class="k">Time</span><span class="v">${formatTime(res.time)} - ${formatTime(res.endTime)}</span></div>
       <div class="summary-row"><span class="k">Booking ID</span><span class="v">${res.bookingId}</span></div>
     </div>
-    <a class="whatsapp-btn" href="${waLink}" target="_blank">Share on WhatsApp</a>
+    <a class="whatsapp-btn" href="${waLink}" target="_blank">Send Confirmation to Salon (WhatsApp)</a>
     <div class="btn-row"><button class="btn secondary" onclick="location.reload()">Book Another Slot</button></div>
     <div style="text-align:center;margin-top:14px;">
       <a href="${CANCEL_PAGE_URL}?id=${res.bookingId}" style="font-size:12px;color:#8a8471;text-decoration:underline;" target="_blank">Cancel this booking</a>
