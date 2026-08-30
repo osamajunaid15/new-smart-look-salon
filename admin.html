@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salon Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12171C; --surface:#1B2229; --surface-2:#232B33;
+    --gold:#D4AF6A; --gold-dim:#8F7647;
+    --teal:#3FA79A;
+    --text:#F1EEE6; --text-dim:#9AA5AC;
+    --line:#2B343C; --error:#E0665C; --ok:#5FBF8F;
+    --radius:8px;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'Work Sans',sans-serif; background:var(--bg); color:var(--text); font-size:15px; }
+  h1,h2,h3{ font-family:'Fraunces',serif; margin:0; font-weight:600; }
+  .topbar{
+    background:var(--surface); border-bottom:1px solid var(--line);
+    padding:16px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+  }
+  .topbar h1{ font-size:20px; color:#fff; }
+  .topbar .brand{ display:flex; align-items:center; gap:10px; }
+  .topbar .dot{ width:8px;height:8px;border-radius:50%;background:var(--gold); }
+  .wrap{ max-width:1000px; margin:0 auto; padding:24px 16px 60px; }
+
+  .btn{
+    padding:9px 16px; border:none; border-radius:6px;
+    background:var(--gold); color:#1B1200; font-weight:600; cursor:pointer; font-size:13px;
+  }
+  .btn.secondary{ background:transparent; color:var(--text); border:1px solid var(--line); }
+  .btn.danger{ background:var(--error); color:#fff; }
+  .btn:disabled{ background:#3a4048; color:#8a9199; cursor:not-allowed; }
+  a.btn{ text-decoration:none; display:inline-block; }
+
+  .stats-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
+  .stat-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px; }
+  .stat-card .label{ font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-dim); margin-bottom:6px; }
+  .stat-card .value{ font-family:'Fraunces',serif; font-size:26px; font-weight:600; color:#fff; }
+  .stat-card.gold .value{ color:var(--gold); }
+  .stat-card.teal .value{ color:var(--teal); }
+
+  .section{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:18px; }
+  .section h2{ font-size:15px; color:#fff; margin-bottom:14px; text-transform:uppercase; letter-spacing:.06em; }
+
+  .attendance-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .attendance-chip{
+    display:flex; align-items:center; gap:8px; background:var(--surface-2); border:1px solid var(--line);
+    border-radius:20px; padding:6px 6px 6px 14px; font-size:13px;
+  }
+  .attendance-chip.absent{ border-color:var(--error); }
+  .att-toggle{
+    border:none; border-radius:14px; padding:5px 10px; font-size:11px; font-weight:600; cursor:pointer;
+  }
+  .att-toggle.present{ background:var(--ok); color:#0a1f14; }
+  .att-toggle.absent{ background:var(--error); color:#2a0a08; }
+
+  .toolbar{ display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+  input[type=date], input[type=text], input[type=tel], select{
+    padding:9px 12px; border:1px solid var(--line); border-radius:6px;
+    font-family:'Work Sans',sans-serif; font-size:14px; background:var(--surface-2); color:var(--text);
+  }
+
+  .table-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:var(--radius); border:1px solid var(--line);}
+  table{ width:100%; border-collapse:collapse; background:var(--surface); min-width:720px;}
+  th,td{ text-align:left; padding:10px 12px; font-size:13px; border-bottom:1px solid var(--line); }
+  th{ background:var(--surface-2); text-transform:uppercase; font-size:10px; letter-spacing:0.06em; color:var(--text-dim);}
+  tr:last-child td{ border-bottom:none; }
+  tr:hover td{ background:rgba(255,255,255,0.02); }
+  .status-pill{ padding:3px 9px; border-radius:10px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;}
+  .status-pill.Confirmed{ background:rgba(95,191,143,0.15); color:var(--ok); }
+  .status-pill.Cancelled{ background:rgba(224,102,92,0.15); color:var(--error); }
+  .status-pill.Completed{ background:rgba(212,175,106,0.15); color:var(--gold); }
+  .status-pill.No-Show{ background:rgba(224,102,92,0.25); color:#fff; }
+
+  .empty{ text-align:center; padding:40px 10px; color:var(--text-dim); }
+
+  .modal-bg{ position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; padding:16px; z-index:10;}
+  .modal-bg.show{ display:flex; }
+  .modal{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:22px; width:100%; max-width:400px; }
+  .modal label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); font-weight:600; display:block; margin:10px 0 5px;}
+  .modal-actions{ display:flex; gap:10px; margin-top:18px; }
+  .err{ background:rgba(224,102,92,0.12); color:var(--error); border:1px solid rgba(224,102,92,0.4); border-radius:6px; padding:8px 10px; font-size:13px; margin-top:8px;}
+  .loading{ text-align:center; padding:30px; color:var(--text-dim); }
+
+  @media (max-width:640px){
+    .stats-row{ grid-template-columns:1fr 1fr; }
+    .stat-card:nth-child(3){ grid-column:span 2; }
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><span class="dot"></span><h1 id="salonName">Salon Admin</h1></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="settings.html" class="btn secondary">⚙️ Manage Menu &amp; Staff</a>
+    <a href="reports.html" class="btn secondary">📊 Reports</a>
+    <button class="btn secondary" onclick="openManualModal(true)">🚶 Walk-in</button>
+    <button class="btn" onclick="openManualModal(false)">+ Add Booking</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="stats-row">
+    <div class="stat-card gold"><div class="label">Today's Bookings</div><div class="value" id="statBookings">—</div></div>
+    <div class="stat-card teal"><div class="label">Est. Revenue</div><div class="value" id="statRevenue">—</div></div>
+    <div class="stat-card"><div class="label">Staff Present</div><div class="value" id="statStaff">—</div></div>
+  </div>
+
+  <div id="customerCancelPanel"></div>
+
+  <div class="section">
+    <h2>Today's Attendance</h2>
+    <div class="attendance-row" id="attendanceRow"><div class="loading">Loading...</div></div>
+  </div>
+
+  <div id="affectedPanel"></div>
+  <div id="restoredPanel"></div>
+
+  <div class="section">
+    <div class="toolbar" style="margin-bottom:0;">
+      <input type="date" id="dateFilter">
+      <button class="btn secondary" onclick="loadAll()">Refresh</button>
+    </div>
+  </div>
+
+  <div id="tableArea"><div class="loading">Loading bookings...</div></div>
+</div>
+
+<!-- Manual Booking / Walk-in Modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2 style="font-size:17px; margin-bottom:6px; color:#fff;" id="modalTitle">Add Manual Booking</h2>
+    <div style="font-size:12px; color:var(--text-dim); margin-bottom:6px;" id="modalSubtitle">Jab customer call kar ke book karwaye</div>
+    <label>Customer Name</label>
+    <input type="text" id="mName" style="width:100%;">
+    <label>Phone (optional)</label>
+    <input type="tel" id="mPhone" style="width:100%;">
+    <label>Services (ek ya zyada select karein)</label>
+    <div id="mServiceList" style="border:1px solid var(--line); border-radius:6px; padding:8px; max-height:140px; overflow-y:auto; margin-bottom:4px;"></div>
+    <label>Professional</label>
+    <select id="mStaff" style="width:100%;"></select>
+    <label>Date</label>
+    <input type="date" id="mDate" style="width:100%;">
+    <label>Time</label>
+    <input type="text" id="mTime" placeholder="HH:MM e.g. 14:30" style="width:100%;">
+    <div id="modalErr"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeManualModal()" style="flex:1;">Cancel</button>
+      <button class="btn" onclick="submitManual()" style="flex:1;">Save Booking</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Service Modal -->
+<div class="modal-bg" id="addServiceModalBg">
+  <div class="modal">
+    <h2 style="font-size:17px; margin-bottom:10px; color:#fff;">Add Service to Booking</h2>
+    <div id="addServiceList" style="border:1px solid var(--line); border-radius:6px; padding:8px; max-height:200px; overflow-y:auto; margin-bottom:10px;"></div>
+    <div id="addServiceErr"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeAddServiceModal()" style="flex:1;">Cancel</button>
+      <button class="btn" onclick="submitAddService()" style="flex:1;">Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://salon-booking-system.osamajunaid.workers.dev'; // e.g. https://salon-booking-system.yourname.workers.dev
+const RATE_PAGE_URL = 'PASTE_YOUR_RATE_PAGE_URL_HERE'; // e.g. https://osamajunaid15.github.io/salon/rate.html
+const BOOKING_PAGE_URL = 'PASTE_YOUR_BOOKING_PAGE_URL_HERE'; // e.g. https://osamajunaid15.github.io/salon/booking.html
+let INIT = null;
+
+async function apiGet(path, params){
+  const url = API_URL + path + '?' + new URLSearchParams(params).toString();
+  const res = await fetch(url);
+  return res.json();
+}
+async function apiPost(path, body){
+  const res = await fetch(API_URL + path, {
+    method:'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function parsePriceNum(str){
+  const s = String(str||'');
+  const match = s.match(/(\d[\d,]*\.?\d*)/);
+  if(!match) return 0;
+  const n = parseFloat(match[1].replace(/,/g,''));
+  return isNaN(n) ? 0 : n;
+}
+
+async function boot(){
+  document.getElementById('dateFilter').value = todayStr();
+  INIT = await apiGet('/init', {});
+  document.getElementById('salonName').textContent = (INIT.salonName || 'Salon') + ' Admin';
+  const svcList = document.getElementById('mServiceList');
+  INIT.services.forEach(s=> svcList.innerHTML += `
+    <label style="display:flex; align-items:center; gap:8px; padding:5px 2px; font-size:13px; font-weight:400; text-transform:none; letter-spacing:0; cursor:pointer;">
+      <input type="checkbox" value="${s.id}" class="mServiceCheck"> ${s.name} (${s.duration}m)${s.price ? ' — ' + s.price : ''}
+    </label>`);
+  const staffSel = document.getElementById('mStaff');
+  INIT.staff.forEach(s=> staffSel.innerHTML += `<option value="${s.id}">${s.name}</option>`);
+  document.getElementById('dateFilter').addEventListener('change', loadAll);
+  loadAll();
+}
+
+async function loadAll(){
+  await Promise.all([loadAttendance(), loadBookings(), loadCustomerCancellations()]);
+}
+
+/* ---------- CUSTOMER-CANCELLED ALERT ---------- */
+async function loadCustomerCancellations(){
+  const res = await apiGet('/bookings', { date: todayStr() });
+  const panel = document.getElementById('customerCancelPanel');
+  if(!res.bookings) { panel.innerHTML = ''; return; }
+  const cancelled = res.bookings.filter(b => b.status === 'Cancelled' && b.cancelReason === 'CUSTOMER');
+  if(cancelled.length === 0){ panel.innerHTML = ''; return; }
+  const rows = cancelled.map(b => `
+    <div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;">
+      <strong>${b.customerName}</strong> ne apni ${b.startTime} ki booking (${b.serviceName}, ${b.staffName}) khud cancel ki hai.
+    </div>
+  `).join('');
+  panel.innerHTML = `
+    <div class="section" style="border-color:var(--gold);">
+      <h2 style="color:var(--gold);">🔔 Customer Cancellations (Aaj)</h2>
+      ${rows}
+    </div>`;
+}
+
+/* ---------- ATTENDANCE ---------- */
+async function loadAttendance(){
+  const date = document.getElementById('dateFilter').value;
+  const res = await apiGet('/attendance', {date});
+  const row = document.getElementById('attendanceRow');
+  row.innerHTML = res.attendance.map(a => `
+    <div class="attendance-chip ${a.status==='Absent'?'absent':''}">
+      <span>${a.name}</span>
+      <button class="att-toggle ${a.status==='Present'?'present':'absent'}" onclick="toggleAttendance('${a.staffId}','${a.status}')">${a.status}</button>
+    </div>
+  `).join('');
+  const presentCount = res.attendance.filter(a=>a.status==='Present').length;
+  document.getElementById('statStaff').textContent = presentCount + '/' + res.attendance.length;
+}
+async function toggleAttendance(staffId, currentStatus){
+  const date = document.getElementById('dateFilter').value;
+  const newStatus = currentStatus === 'Present' ? 'Absent' : 'Present';
+  const res = await apiPost('/attendance', {staffId, date, status:newStatus});
+  loadAttendance();
+  loadBookings();
+  if(res.affectedBookings && res.affectedBookings.length){
+    showAffectedBookings(res.affectedBookings);
+  }
+  if(res.restoredBookings && res.restoredBookings.length){
+    showRestoredBookings(res.restoredBookings);
+  }
+}
+
+function showAffectedBookings(list){
+  const rows = list.map(b => {
+    const msg = `Salaam ${b.customerName}! Maazrat ke sath, aaj aapke professional available nahi honge, isliye aapki ${b.startTime} ki booking (${b.serviceName}) cancel kar di gayi hai. Naya slot book karne ke liye yahan click karein: ${BOOKING_PAGE_URL} — ${INIT.salonName}`;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">
+      <span>${b.customerName} — ${b.startTime} (${b.serviceName})</span>
+      <button class="btn secondary" style="padding:6px 10px;font-size:12px;" onclick="window.open('https://wa.me/${b.phone.replace(/[^0-9]/g,'')}?text=${encodeURIComponent(msg)}','_blank')">Notify (WhatsApp)</button>
+    </div>`;
+  }).join('');
+  document.getElementById('affectedPanel').innerHTML = `
+    <div class="section" style="border-color:var(--error);">
+      <h2 style="color:var(--error);">⚠ Cancelled Bookings — Notify Customers</h2>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">Yeh bookings is staff ki absence ki wajah se cancel ho gayi hain. Har customer ko reschedule link bhejein.</div>
+      ${rows}
+    </div>`;
+}
+
+function showRestoredBookings(list){
+  const rows = list.map(b => {
+    const msg = `Khushkhabri ${b.customerName}! Aapka professional wapis aa gaya hai. Aapki ${b.startTime} ki booking (${b.serviceName}) wapis confirm ho gayi hai. — ${INIT.salonName}`;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">
+      <span>${b.customerName} — ${b.startTime} (${b.serviceName})</span>
+      <button class="btn secondary" style="padding:6px 10px;font-size:12px;" onclick="window.open('https://wa.me/${b.phone.replace(/[^0-9]/g,'')}?text=${encodeURIComponent(msg)}','_blank')">Notify (WhatsApp)</button>
+    </div>`;
+  }).join('');
+  document.getElementById('restoredPanel').innerHTML = `
+    <div class="section" style="border-color:var(--ok);">
+      <h2 style="color:var(--ok);">✓ Bookings Restored — Inform Customers</h2>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">Staff wapis aa gaye hain, yeh bookings dobara confirm ho gayi hain.</div>
+      ${rows}
+    </div>`;
+}
+
+/* ---------- BOOKINGS ---------- */
+async function loadBookings(){
+  const date = document.getElementById('dateFilter').value;
+  document.getElementById('tableArea').innerHTML = `<div class="loading">Loading...</div>`;
+  const res = await apiGet('/bookings', {date: date});
+  if(res.error){ document.getElementById('tableArea').innerHTML = `<div class="err">${res.error}</div>`; return; }
+
+  document.getElementById('statBookings').textContent = res.bookings.filter(b=>(b.status==='Confirmed'||b.status==='Completed')).length;
+  // Revenue: use the price actually stored on each booking (accounts for staff-wise pricing and deals correctly).
+  let estRevenue = 0;
+  res.bookings.filter(b=>(b.status==='Confirmed'||b.status==='Completed')).forEach(b=>{
+    estRevenue += parsePriceNum(b.price);
+  });
+  document.getElementById('statRevenue').textContent = 'Rs. ' + estRevenue;
+
+  if(!res.bookings.length){ document.getElementById('tableArea').innerHTML = `<div class="empty">Is din koi booking nahi hai.</div>`; return; }
+
+  let html = `<div class="table-scroll"><table><thead><tr><th>Photo</th><th>Time</th><th>Customer</th><th>Service</th><th>Price</th><th>Staff</th><th>Status</th><th>Rating</th><th>Actions</th></tr></thead><tbody>`;
+  res.bookings.forEach(b=>{
+    const photoCell = b.photo ? `<img src="${b.photo}" style="width:32px;height:32px;object-fit:cover;border-radius:50%;cursor:pointer;" onclick="window.open('${b.photo}','_blank')">` : '—';
+    const ratingCell = b.rated ? '★'.repeat(b.rating) + '☆'.repeat(5-b.rating) : (b.status === 'Completed' ? '<span style="color:var(--text-dim);font-size:11px;">Waiting</span>' : '—');
+    let actions = '';
+    if(b.status === 'Confirmed'){
+      actions += `<button class="btn secondary" style="padding:5px 8px;font-size:11px;margin-right:4px;" onclick="notifyReady('${b.phone}','${b.customerName.replace(/'/g,"\\'")}','${b.staffName.replace(/'/g,"\\'")}')">Notify Ready</button>`;
+      actions += `<button class="btn secondary" style="padding:5px 8px;font-size:11px;margin-right:4px;" onclick="openAddServiceModal('${b.bookingId}','${b.serviceId}')">+ Add Service</button>`;
+      actions += `<button class="btn" style="padding:5px 8px;font-size:11px;margin-right:4px;" onclick="completeBooking('${b.bookingId}','${b.phone}','${b.customerName.replace(/'/g,"\\'")}','${b.staffName.replace(/'/g,"\\'")}')">Complete</button>`;
+      actions += `<button class="btn danger" style="padding:5px 8px;font-size:11px;" onclick="cancelBooking('${b.bookingId}')">Cancel</button>`;
+    }
+    html += `<tr>
+      <td>${photoCell}</td>
+      <td>${b.startTime} - ${b.endTime}</td>
+      <td>${b.customerName}<br><span style="font-size:11px;color:var(--text-dim);">${b.phone}</span></td>
+      <td>${b.serviceName}</td>
+      <td>${b.price || '—'}</td>
+      <td>${b.staffName}</td>
+      <td><span class="status-pill ${b.status}">${b.status}</span></td>
+      <td>${ratingCell}</td>
+      <td>${actions}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  document.getElementById('tableArea').innerHTML = html;
+}
+
+function notifyReady(phone, name, staffName){
+  const msg = `Salaam ${name}! ${staffName} thori dair mein aapke liye free ho jayenge. Aap ab shop ke liye nikal sakte hain. — ${INIT.salonName}`;
+  window.open('https://wa.me/' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+async function completeBooking(id, phone, name, staffName){
+  await apiPost('/complete', {bookingId:id});
+  const rateLink = RATE_PAGE_URL + '?id=' + id;
+  const msg = `Shukriya ${name}! Umeed hai ${staffName} ki service pasand aayi hogi. Apna anubhav rate karein: ${rateLink} — ${INIT.salonName}`;
+  window.open('https://wa.me/' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
+  loadBookings();
+}
+
+async function cancelBooking(id){
+  if(!confirm('Yeh booking cancel karni hai?')) return;
+  await apiPost('/cancel', {bookingId:id, reason:'ADMIN'});
+  loadBookings();
+}
+
+function openManualModal(isWalkIn){
+  document.getElementById('mDate').value = document.getElementById('dateFilter').value || todayStr();
+  document.getElementById('mTime').value = '';
+  document.getElementById('mPhone').value = '';
+  document.getElementById('mName').value = '';
+  document.querySelectorAll('.mServiceCheck').forEach(c=>c.checked=false);
+  document.getElementById('modalErr').innerHTML = '';
+
+  if(isWalkIn){
+    document.getElementById('modalTitle').textContent = 'Walk-in Customer';
+    document.getElementById('modalSubtitle').textContent = 'Abhi shop pe aaya customer';
+    const now = new Date();
+    document.getElementById('mDate').value = todayStr();
+    document.getElementById('mDate').readOnly = true;
+    document.getElementById('mTime').value = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  } else {
+    document.getElementById('modalTitle').textContent = 'Add Manual Booking';
+    document.getElementById('modalSubtitle').textContent = 'Jab customer call kar ke book karwaye';
+    document.getElementById('mDate').readOnly = false;
+  }
+  document.getElementById('modalBg').classList.add('show');
+}
+function closeManualModal(){
+  document.getElementById('modalBg').classList.remove('show');
+}
+
+async function submitManual(){
+  const name = document.getElementById('mName').value.trim();
+  const phone = document.getElementById('mPhone').value.trim();
+  const serviceIds = Array.from(document.querySelectorAll('.mServiceCheck:checked')).map(c=>c.value);
+  const staffId = document.getElementById('mStaff').value;
+  const date = document.getElementById('mDate').value;
+  const time = document.getElementById('mTime').value.trim();
+
+  if(!name || !date || !time || serviceIds.length === 0){
+    document.getElementById('modalErr').innerHTML = `<div class="err">Naam, date, time aur kam az kam 1 service zaroori hai (phone optional hai). Time format HH:MM, e.g. 14:30.</div>`;
+    return;
+  }
+  const res = await apiPost('/manual-booking', {
+    customerName:name, phone:phone,
+    serviceIds:serviceIds, staffId:staffId, date:date, time:time
+  });
+  if(res.error){
+    document.getElementById('modalErr').innerHTML = `<div class="err">${res.message || res.error}</div>`;
+    return;
+  }
+  closeManualModal();
+  loadAll();
+}
+
+/* ---------- ADD SERVICE (UPSELLING) ---------- */
+let addServiceCurrentBooking = null;
+
+function openAddServiceModal(bookingId, existingServiceIdCsv){
+  const existingIds = String(existingServiceIdCsv||'').split(',').map(s=>s.trim());
+  addServiceCurrentBooking = bookingId;
+  const list = document.getElementById('addServiceList');
+  list.innerHTML = INIT.services
+    .filter(s => !existingIds.includes(s.id))
+    .map(s => `
+      <label style="display:flex; align-items:center; gap:8px; padding:5px 2px; font-size:13px; font-weight:400; text-transform:none; letter-spacing:0; cursor:pointer;">
+        <input type="checkbox" value="${s.id}" class="addServiceCheck"> ${s.name} (${s.duration}m)${s.price ? ' — ' + s.price : ''}
+      </label>`).join('');
+  if(!list.innerHTML) list.innerHTML = `<div style="font-size:13px;color:var(--text-dim);">Baaki sab services already is booking mein shamil hain.</div>`;
+  document.getElementById('addServiceErr').innerHTML = '';
+  document.getElementById('addServiceModalBg').classList.add('show');
+}
+function closeAddServiceModal(){
+  document.getElementById('addServiceModalBg').classList.remove('show');
+  addServiceCurrentBooking = null;
+}
+async function submitAddService(){
+  const serviceIds = Array.from(document.querySelectorAll('.addServiceCheck:checked')).map(c=>c.value);
+  if(serviceIds.length === 0){
+    document.getElementById('addServiceErr').innerHTML = `<div class="err">Kam az kam 1 service select karein.</div>`;
+    return;
+  }
+  const res = await apiPost('/add-service', { bookingId: addServiceCurrentBooking, serviceIds });
+  if(res.error){
+    document.getElementById('addServiceErr').innerHTML = `<div class="err">${res.error}</div>`;
+    return;
+  }
+  closeAddServiceModal();
+  loadBookings();
+  if(res.delayInfo){
+    const d = res.delayInfo;
+    const msg = `Salaam ${d.customerName}! Aapki appointment mein thori dair (~${d.overlapMinutes} minute) ki delay ho sakti hai kyunke pichla customer ka kaam thora lamba chal raha hai. Maazrat ke sath. — ${INIT.salonName}`;
+    if(confirm(`Yeh add karne se ${d.customerName} (${d.startTime}) ka time ${d.overlapMinutes} minute overlap ho jayega. Unhe WhatsApp pe notify karna chahenge?`)){
+      window.open('https://wa.me/' + d.phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
+    }
+  }
+}
+
+// Auto-refresh every 30 seconds so new bookings show up without manually clicking Refresh.
+// Pauses when the tab isn't visible (e.g. minimized) to avoid wasted requests.
+setInterval(() => {
+  if (document.visibilityState === 'visible') {
+    loadAll();
+  }
+}, 30000);
+
+boot();
+</script>
+</body>
+</html>

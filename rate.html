@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rate Your Visit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1E2A22; --paper:#F1EEE6; --brass:#B8893C;
+    --green:#24402F; --green-deep:#16261C; --line:#D8D1C0; --error:#8C3B32; --radius:4px;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'Work Sans',sans-serif; background:var(--paper); color:var(--ink); min-height:100vh;}
+  h1,h2{ font-family:'Fraunces',serif; margin:0; font-weight:600; }
+  .stripe-header{
+    height:8px; width:100%;
+    background:repeating-linear-gradient(-45deg,var(--green) 0px,var(--green) 14px,var(--brass) 14px,var(--brass) 20px,#E7E2D6 20px,#E7E2D6 34px);
+  }
+  .wrap{ max-width:420px; margin:0 auto; padding:50px 20px; text-align:center; }
+  .sub{ font-size:13px; color:#6b6558; margin-top:6px; margin-bottom:30px;}
+  .stars{ font-size:44px; letter-spacing:8px; cursor:pointer; margin-bottom:20px; }
+  .star{ color:#D8D1C0; transition:color .15s ease; }
+  .star.active{ color:var(--brass); }
+  .btn{
+    padding:14px 30px; border:none; border-radius:var(--radius);
+    background:var(--green); color:#fff; font-weight:600; font-size:15px; cursor:pointer;
+  }
+  .btn:disabled{ background:#b8b3a4; }
+  .thankyou{ padding:40px 0; }
+  .thankyou .mark{ width:60px;height:60px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 16px;}
+  .loading{ padding:60px 0; color:#8a8471; }
+  .err{ background:#FBEAE7; color:var(--error); border:1px solid #E3B3AB; border-radius:var(--radius); padding:14px; font-size:14px; }
+</style>
+</head>
+<body>
+<div class="stripe-header"></div>
+<div class="wrap" id="app"><div class="loading">Loading...</div></div>
+
+<script>
+const API_URL = 'https://salon-booking-system.osamajunaid.workers.dev';
+const bookingId = new URLSearchParams(window.location.search).get('id');
+let selectedRating = 0;
+
+async function boot(){
+  if(!bookingId){
+    document.getElementById('app').innerHTML = `<div class="err">Invalid link.</div>`;
+    return;
+  }
+  const res = await fetch(API_URL + '/booking?id=' + encodeURIComponent(bookingId));
+  const data = await res.json();
+  if(data.error){
+    document.getElementById('app').innerHTML = `<div class="err">${data.error}</div>`;
+    return;
+  }
+  if(data.rated){
+    showThankYou(data);
+    return;
+  }
+  render(data);
+}
+
+function render(data){
+  document.getElementById('app').innerHTML = `
+    <h1>Rate Your Visit</h1>
+    <div class="sub">${data.staffName} — ${data.serviceName}</div>
+    <div class="stars" id="stars">
+      ${[1,2,3,4,5].map(i=>`<span class="star" data-v="${i}" onclick="setRating(${i})">★</span>`).join('')}
+    </div>
+    <div id="err"></div>
+    <button class="btn" id="submitBtn" disabled onclick="submitRating()">Submit Rating</button>
+  `;
+}
+
+function setRating(v){
+  selectedRating = v;
+  document.querySelectorAll('.star').forEach(s=>{
+    s.classList.toggle('active', Number(s.dataset.v) <= v);
+  });
+  document.getElementById('submitBtn').disabled = false;
+}
+
+async function submitRating(){
+  document.getElementById('submitBtn').disabled = true;
+  const res = await fetch(API_URL + '/rate', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ bookingId, rating: selectedRating })
+  });
+  const data = await res.json();
+  if(data.error){
+    document.getElementById('err').innerHTML = `<div class="err">${data.message || data.error}</div>`;
+    document.getElementById('submitBtn').disabled = false;
+    return;
+  }
+  showThankYou();
+}
+
+function showThankYou(){
+  document.getElementById('app').innerHTML = `
+    <div class="thankyou">
+      <div class="mark">✓</div>
+      <h2>Shukriya!</h2>
+      <div class="sub">Aapki rating hume behtar hone mein madad degi.</div>
+    </div>
+  `;
+}
+
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salon Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1E2A22; --paper:#F1EEE6; --paper-2:#E7E2D6;
+    --brass:#B8893C; --brass-dark:#8F6A2C;
+    --green:#24402F; --green-deep:#16261C;
+    --line:#D8D1C0; --error:#8C3B32; --radius:4px;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'Work Sans',sans-serif; background:var(--paper); color:var(--ink); font-size:16px;}
+  h1,h2,h3{ font-family:'Fraunces',serif; margin:0; font-weight:600; }
+  .stripe-header{ height:8px; width:100%; background:repeating-linear-gradient(-45deg,var(--green) 0px,var(--green) 14px,var(--brass) 14px,var(--brass) 20px,var(--paper-2) 20px,var(--paper-2) 34px); }
+  .topbar{ background:var(--green-deep); color:#fff; padding:18px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+  .topbar h1{ font-size:22px; }
+  .wrap{ max-width:800px; margin:0 auto; padding:20px 16px 60px; }
+  .section{ background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:20px; }
+  .section h2{ font-size:18px; margin-bottom:14px; }
+  .row{ display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+  .row input, .row select{ padding:10px; border:1px solid var(--line); border-radius:var(--radius); font-size:16px; font-family:'Work Sans',sans-serif;}
+  .row input[type=text]{ flex:2; min-width:100px; }
+  .row input[type=number]{ flex:1; min-width:70px; }
+  .row .price{ flex:1; min-width:80px; }
+  label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#6b6558; font-weight:600; display:block; margin-bottom:5px; margin-top:10px;}
+  .btn{ padding:10px 16px; border:none; border-radius:var(--radius); background:var(--green); color:#fff; font-weight:600; cursor:pointer; font-size:14px;}
+  .btn.small{ padding:8px 10px; font-size:12px; }
+  .btn.danger{ background:var(--error); }
+  .btn.secondary{ background:transparent; color:var(--green); border:1px solid var(--green); }
+  .item-row{ display:flex; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid var(--paper-2); flex-wrap:wrap; }
+  .item-row:last-child{ border-bottom:none; }
+  .item-row input[type=text]{ flex:2; min-width:100px; padding:8px; border:1px solid var(--line); border-radius:var(--radius); font-size:16px;}
+  .item-row input[type=number]{ width:70px; padding:8px; border:1px solid var(--line); border-radius:var(--radius); font-size:16px;}
+  .item-row .price{ width:90px; padding:8px; border:1px solid var(--line); border-radius:var(--radius); font-size:16px;}
+  .toggle{ display:flex; align-items:center; gap:4px; font-size:12px; color:#6b6558; }
+  .link-box{ font-size:12px; background:var(--paper-2); padding:6px 8px; border-radius:var(--radius); word-break:break-all; margin-top:4px; }
+  .save-msg{ font-size:13px; color:var(--green); margin-top:6px; display:none; }
+  .loading{ text-align:center; padding:40px; color:#8a8471; }
+  select{ min-width:120px; }
+  @media (max-width:480px){
+    .item-row{ flex-direction:column; align-items:stretch; }
+    .item-row input{ width:100% !important; }
+  }
+</style>
+</head>
+<body>
+<div class="stripe-header"></div>
+<div class="topbar"><h1>Salon Settings</h1><a href="admin.html" style="color:#fff;font-size:13px;text-decoration:none;border:1px solid rgba(255,255,255,0.4);padding:6px 12px;border-radius:4px;">← Back to Admin</a></div>
+<div class="wrap" id="app"><div class="loading">Loading...</div></div>
+
+<script>
+const API_URL = 'https://salon-booking-system.osamajunaid.workers.dev';
+let DATA = null;
+
+async function apiGet(path, params){
+  const res = await fetch(API_URL + path + '?' + new URLSearchParams(params||{}).toString());
+  return res.json();
+}
+async function apiPost(path, body){
+  const res = await fetch(API_URL + path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  return res.json();
+}
+
+async function boot(){
+  DATA = await apiGet('/admin/full', {});
+  render();
+}
+
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    ${salonInfoSection()}
+    ${servicesSection()}
+    ${dealsSection()}
+    ${staffSection()}
+    ${pricingSection()}
+  `;
+  if(DATA.staff.length) renderPricingRows();
+  if(DATA.services.length) renderDealServiceChecks();
+}
+
+/* ---------- SALON INFO ---------- */
+function salonInfoSection(){
+  const c = DATA.config;
+  return `
+  <div class="section">
+    <h2>Salon Info</h2>
+    <label>Salon Name</label>
+    <input type="text" id="cfg_SalonName" value="${c.SalonName||''}" style="width:100%;">
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <label>Opening Time</label>
+        <input type="text" id="cfg_OpeningTime" value="${c.OpeningTime||''}" placeholder="11:00">
+      </div>
+      <div>
+        <label>Closing Time</label>
+        <input type="text" id="cfg_ClosingTime" value="${c.ClosingTime||''}" placeholder="21:00">
+      </div>
+      <div>
+        <label>Slot Interval (min)</label>
+        <input type="number" id="cfg_SlotInterval" value="${c.SlotInterval||15}">
+      </div>
+    </div>
+    <label>Off Days (0=Sun...6=Sat, comma separated, blank = none)</label>
+    <input type="text" id="cfg_OffDays" value="${c.OffDays||''}" style="width:100%;">
+    <button class="btn" style="margin-top:12px;" onclick="saveSalonInfo()">Save Salon Info</button>
+    <div class="save-msg" id="msg_salon">Saved ✓</div>
+  </div>`;
+}
+async function saveSalonInfo(){
+  const keys = ['SalonName','OpeningTime','ClosingTime','SlotInterval','OffDays'];
+  for(const k of keys){
+    await apiPost('/admin/config', { key:k, value: document.getElementById('cfg_'+k).value });
+  }
+  flash('msg_salon');
+  const fresh = await apiGet('/admin/full', {});
+  DATA.config = fresh.config;
+}
+
+/* ---------- SERVICES ---------- */
+function servicesSection(){
+  const rows = DATA.services.map(s => `
+    <div class="item-row" data-id="${s.id}">
+      <input type="text" class="svc-name" value="${s.name}">
+      <input type="number" class="svc-duration" value="${s.duration}" title="minutes">
+      <input type="text" class="svc-price price" value="${s.price||''}" placeholder="Rs.">
+      <label class="toggle"><input type="checkbox" class="svc-active" ${s.active?'checked':''}> Active</label>
+      <button class="btn small" onclick="saveService('${s.id}')">Save</button>
+    </div>
+  `).join('');
+  return `
+  <div class="section">
+    <h2>Services / Menu</h2>
+    ${rows}
+    <div class="item-row" style="margin-top:10px;border-top:2px solid var(--line);padding-top:14px;">
+      <input type="text" id="newSvcName" placeholder="New service name">
+      <input type="number" id="newSvcDuration" placeholder="Min">
+      <input type="text" id="newSvcPrice" class="price" placeholder="Rs.">
+      <button class="btn small" onclick="addService()">+ Add</button>
+    </div>
+    <div class="save-msg" id="msg_service">Saved ✓</div>
+  </div>`;
+}
+async function saveService(id){
+  const row = document.querySelector(`.item-row[data-id="${id}"]`);
+  await apiPost('/admin/service', {
+    id,
+    name: row.querySelector('.svc-name').value,
+    duration: Number(row.querySelector('.svc-duration').value),
+    price: row.querySelector('.svc-price').value,
+    active: row.querySelector('.svc-active').checked
+  });
+  flash('msg_service');
+  await refreshServices();
+}
+async function addService(){
+  const name = document.getElementById('newSvcName').value.trim();
+  const duration = Number(document.getElementById('newSvcDuration').value);
+  const price = document.getElementById('newSvcPrice').value.trim();
+  if(!name || !duration){ alert('Naam aur duration zaroori hai'); return; }
+  await apiPost('/admin/service', { name, duration, price, active:true });
+  await refreshServices();
+}
+async function refreshServices(){
+  const fresh = await apiGet('/admin/full', {});
+  DATA.services = fresh.services;
+  render();
+}
+
+/* ---------- STAFF ---------- */
+function staffSection(){
+  const base = window.location.href.replace('settings.html','staff.html');
+  const rows = DATA.staff.map(s => `
+    <div class="item-row" data-id="${s.id}">
+      <input type="text" class="staff-name" value="${s.name}">
+      <label class="toggle"><input type="checkbox" class="staff-active" ${s.active?'checked':''}> Active</label>
+      <button class="btn small" onclick="saveStaff('${s.id}')">Save</button>
+      <div style="width:100%;">
+        <div class="link-box">Dashboard link: ${base}?staff=${s.id}</div>
+      </div>
+    </div>
+  `).join('');
+  return `
+  <div class="section">
+    <h2>Staff</h2>
+    ${rows}
+    <div class="item-row" style="margin-top:10px;border-top:2px solid var(--line);padding-top:14px;">
+      <input type="text" id="newStaffName" placeholder="New staff name">
+      <button class="btn small" onclick="addStaff()">+ Add</button>
+    </div>
+    <div class="save-msg" id="msg_staff">Saved ✓</div>
+  </div>`;
+}
+async function saveStaff(id){
+  const row = document.querySelector(`.item-row[data-id="${id}"]`);
+  await apiPost('/admin/staff', {
+    id,
+    name: row.querySelector('.staff-name').value,
+    active: row.querySelector('.staff-active').checked
+  });
+  flash('msg_staff');
+  await refreshStaff();
+}
+async function addStaff(){
+  const name = document.getElementById('newStaffName').value.trim();
+  if(!name){ alert('Naam likhein'); return; }
+  await apiPost('/admin/staff', { name, active:true });
+  await refreshStaff();
+}
+async function refreshStaff(){
+  const fresh = await apiGet('/admin/full', {});
+  DATA.staff = fresh.staff;
+  render();
+}
+
+/* ---------- DEALS / PACKAGES ---------- */
+function dealActualTotal(serviceIds){
+  return DATA.services.filter(s=>serviceIds.includes(s.id))
+    .reduce((sum,s)=> sum + parsePriceNum(s.price), 0);
+}
+function parsePriceNum(str){
+  const match = String(str||'').match(/(\d[\d,]*\.?\d*)/);
+  if(!match) return 0;
+  const n = parseFloat(match[1].replace(/,/g,''));
+  return isNaN(n) ? 0 : n;
+}
+function dealsSection(){
+  const rows = (DATA.deals||[]).map(d => {
+    const actual = dealActualTotal(d.serviceIds);
+    const dealPrice = parsePriceNum(d.price);
+    const diff = actual - dealPrice;
+    const svcChecks = DATA.services.map(s => `
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;text-transform:none;letter-spacing:0;margin-bottom:3px;">
+        <input type="checkbox" class="deal-svc" value="${s.id}" data-deal="${d.id}" ${d.serviceIds.includes(s.id)?'checked':''} onchange="recalcDealRow('${d.id}')"> ${s.name}
+      </label>`).join('');
+    return `
+    <div class="item-row" data-deal-id="${d.id}" style="flex-direction:column;align-items:stretch;background:var(--paper);border-radius:var(--radius);padding:12px;margin-bottom:10px;border:1px solid var(--line);">
+      <div class="row" style="margin-bottom:8px;">
+        <input type="text" class="deal-name" value="${d.name}" placeholder="Package name e.g. Deal 1" style="flex:2;">
+        <input type="text" class="deal-price price" value="${d.price}" placeholder="Deal Rs." style="flex:1;" oninput="recalcDealRow('${d.id}')">
+        <label class="toggle"><input type="checkbox" class="deal-active" ${d.active?'checked':''}> Active</label>
+      </div>
+      <div style="font-size:12px;color:#6b6558;margin-bottom:6px;">Included services:</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:2px;margin-bottom:8px;">${svcChecks}</div>
+      <div class="deal-summary" style="font-size:13px;margin-bottom:8px;">
+        Actual total: <strong>Rs. ${actual}</strong> &nbsp;|&nbsp;
+        Deal price: <strong>Rs. ${dealPrice}</strong> &nbsp;|&nbsp;
+        <span style="color:${diff>0?'var(--green)':'var(--error)'};">Customer saves: Rs. ${diff}</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn small" onclick="saveDeal('${d.id}')">Save</button>
+        <button class="btn small danger" onclick="deleteDeal('${d.id}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="section">
+    <h2>Packages / Deals</h2>
+    <div style="font-size:13px;color:#6b6558;margin-bottom:12px;">
+      Kai services ko mila kar ek package bana sakte hain (jese "Deal 1": Haircut + Beard + Facial), custom price ke sath. Customer ko actual price aur savings dono dikhengi.
+    </div>
+    ${rows}
+    <div class="item-row" style="flex-direction:column;align-items:stretch;border-top:2px solid var(--line);padding-top:14px;">
+      <div class="row" style="margin-bottom:8px;">
+        <input type="text" id="newDealName" placeholder="Package name e.g. Deal 1" style="flex:2;">
+        <input type="text" id="newDealPrice" class="price" placeholder="Deal Rs." style="flex:1;" oninput="recalcNewDeal()">
+      </div>
+      <div style="font-size:12px;color:#6b6558;margin-bottom:6px;">Select services to include:</div>
+      <div id="newDealServices" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:2px;margin-bottom:8px;"></div>
+      <div id="newDealSummary" style="font-size:13px;margin-bottom:8px;color:#6b6558;"></div>
+      <button class="btn small" onclick="addDeal()">+ Add Package</button>
+    </div>
+    <div class="save-msg" id="msg_deal">Saved ✓</div>
+  </div>`;
+}
+function renderDealServiceChecks(){
+  const el = document.getElementById('newDealServices');
+  if(!el) return;
+  el.innerHTML = DATA.services.map(s => `
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;text-transform:none;letter-spacing:0;margin-bottom:3px;">
+      <input type="checkbox" class="new-deal-svc" value="${s.id}" onchange="recalcNewDeal()"> ${s.name}
+    </label>`).join('');
+}
+function recalcDealRow(dealId){
+  const row = document.querySelector(`.item-row[data-deal-id="${dealId}"]`);
+  const checked = Array.from(row.querySelectorAll('.deal-svc:checked')).map(c=>c.value);
+  const actual = dealActualTotal(checked);
+  const dealPrice = parsePriceNum(row.querySelector('.deal-price').value);
+  const diff = actual - dealPrice;
+  row.querySelector('.deal-summary').innerHTML = `
+    Actual total: <strong>Rs. ${actual}</strong> &nbsp;|&nbsp;
+    Deal price: <strong>Rs. ${dealPrice}</strong> &nbsp;|&nbsp;
+    <span style="color:${diff>0?'var(--green)':'var(--error)'};">Customer saves: Rs. ${diff}</span>`;
+}
+function recalcNewDeal(){
+  const checked = Array.from(document.querySelectorAll('.new-deal-svc:checked')).map(c=>c.value);
+  const actual = dealActualTotal(checked);
+  const dealPrice = parsePriceNum(document.getElementById('newDealPrice').value);
+  const diff = actual - dealPrice;
+  document.getElementById('newDealSummary').innerHTML = checked.length
+    ? `Actual total: Rs. ${actual} &nbsp;|&nbsp; Savings if you set this price: Rs. ${diff}`
+    : '';
+}
+async function saveDeal(id){
+  const row = document.querySelector(`.item-row[data-deal-id="${id}"]`);
+  const serviceIds = Array.from(row.querySelectorAll('.deal-svc:checked')).map(c=>c.value);
+  await apiPost('/admin/deal', {
+    id,
+    name: row.querySelector('.deal-name').value,
+    serviceIds,
+    price: row.querySelector('.deal-price').value,
+    active: row.querySelector('.deal-active').checked
+  });
+  flash('msg_deal');
+  await refreshDeals();
+}
+async function deleteDeal(id){
+  if(!confirm('Yeh package delete karni hai?')) return;
+  const row = document.querySelector(`.item-row[data-deal-id="${id}"]`);
+  const serviceIds = Array.from(row.querySelectorAll('.deal-svc:checked')).map(c=>c.value);
+  await apiPost('/admin/deal', { id, name: row.querySelector('.deal-name').value, serviceIds, price: row.querySelector('.deal-price').value, active: false });
+  await refreshDeals();
+}
+async function addDeal(){
+  const name = document.getElementById('newDealName').value.trim();
+  const price = document.getElementById('newDealPrice').value.trim();
+  const serviceIds = Array.from(document.querySelectorAll('.new-deal-svc:checked')).map(c=>c.value);
+  if(!name || !price || serviceIds.length===0){ alert('Naam, price aur kam az kam 1 service select karein'); return; }
+  await apiPost('/admin/deal', { name, serviceIds, price, active:true });
+  await refreshDeals();
+}
+async function refreshDeals(){
+  const fresh = await apiGet('/admin/full', {});
+  DATA.deals = fresh.deals;
+  render();
+}
+
+/* ---------- STAFF-WISE PRICING OVERRIDES ---------- */
+function pricingSection(){
+  const staffOptions = DATA.staff.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  return `
+  <div class="section">
+    <h2>Staff-wise Pricing (optional)</h2>
+    <div style="font-size:13px;color:#6b6558;margin-bottom:10px;">
+      Agar kisi staff ki koi service ka rate alag hai (jese senior barber zyada charge kare), yahan set karein. Khali chorne ka matlab hai normal menu price use hoga.
+    </div>
+    <label>Staff select karein</label>
+    <select id="pricingStaffSelect" onchange="renderPricingRows()">${staffOptions}</select>
+    <div id="pricingRows" style="margin-top:12px;"></div>
+    <button class="btn" style="margin-top:10px;" onclick="savePricing()">Save Pricing</button>
+    <div class="save-msg" id="msg_pricing">Saved ✓</div>
+  </div>`;
+}
+async function renderPricingRows(){
+  const staffId = document.getElementById('pricingStaffSelect').value;
+  const overrides = DATA.pricing.filter(p=>p.staff_id===staffId);
+  const map = {};
+  overrides.forEach(o=>map[o.service_id]=o.price);
+  const rows = DATA.services.map(s => `
+    <div class="item-row" data-service="${s.id}">
+      <div style="flex:2;font-size:14px;">${s.name} <span style="color:#8a8471;font-size:12px;">(base: ${s.price||'—'})</span></div>
+      <input type="text" class="price-override price" placeholder="${s.price||'Rs.'}" value="${map[s.id]||''}">
+    </div>
+  `).join('');
+  document.getElementById('pricingRows').innerHTML = rows;
+}
+async function savePricing(){
+  const staffId = document.getElementById('pricingStaffSelect').value;
+  const rows = document.querySelectorAll('#pricingRows .item-row');
+  for(const row of rows){
+    const serviceId = row.dataset.service;
+    const price = row.querySelector('.price-override').value.trim();
+    await apiPost('/admin/pricing', { staffId, serviceId, price });
+  }
+  flash('msg_pricing');
+  const fresh = await apiGet('/admin/full', {});
+  DATA.pricing = fresh.pricing;
+}
+
+function flash(id){
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  setTimeout(()=>el.style.display='none', 2000);
+}
+
+boot();
+</script>
+</body>
+</html>

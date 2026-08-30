@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Queue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1E2A22; --paper:#F1EEE6; --paper-2:#E7E2D6;
+    --brass:#B8893C; --brass-dark:#8F6A2C;
+    --green:#24402F; --green-deep:#16261C;
+    --line:#D8D1C0; --error:#8C3B32; --radius:4px;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'Work Sans',sans-serif; background:var(--paper); color:var(--ink); }
+  h1,h2,h3{ font-family:'Fraunces',serif; margin:0; font-weight:600; }
+  .stripe-header{
+    height:8px; width:100%;
+    background:repeating-linear-gradient(-45deg,var(--green) 0px,var(--green) 14px,var(--brass) 14px,var(--brass) 20px,var(--paper-2) 20px,var(--paper-2) 34px);
+  }
+  .topbar{ background:var(--green-deep); color:#fff; padding:20px; text-align:center; }
+  .topbar h1{ font-size:22px; }
+  .topbar .sub{ font-size:12px; color:var(--brass); text-transform:uppercase; letter-spacing:0.1em; margin-top:4px;}
+  .wrap{ max-width:600px; margin:0 auto; padding:16px; }
+
+  input[type=date]{ padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius); font-size:16px; background:#fff; width:100%; margin-bottom:16px;}
+
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px; margin-bottom:12px;
+  }
+  .card-top{ display:flex; gap:12px; align-items:center; }
+  .card-photo{ width:52px; height:52px; border-radius:50%; object-fit:cover; border:1px solid var(--line); flex-shrink:0; }
+  .card-photo.placeholder{ display:flex; align-items:center; justify-content:center; background:var(--paper-2); font-size:20px; color:var(--brass-dark); }
+  .card-info{ flex:1; }
+  .card-time{ font-family:'Fraunces',serif; font-size:18px; font-weight:600; }
+  .card-name{ font-size:14px; font-weight:600; margin-top:2px; }
+  .card-service{ font-size:12px; color:#6b6558; margin-top:1px; }
+  .status-pill{ padding:3px 8px; border-radius:10px; font-size:10px; font-weight:600; text-transform:uppercase; }
+  .status-pill.Confirmed{ background:#E4EEE6; color:var(--green); }
+  .status-pill.Completed{ background:#E7E2D6; color:var(--brass-dark); }
+
+  .card-actions{ display:flex; gap:8px; margin-top:12px; }
+  .btn{
+    flex:1; padding:10px; border:none; border-radius:var(--radius);
+    font-weight:600; font-size:13px; cursor:pointer;
+  }
+  .btn.notify{ background:transparent; color:var(--green); border:1px solid var(--green); }
+  .btn.complete{ background:var(--green); color:#fff; }
+
+  .empty{ text-align:center; padding:50px 10px; color:#8a8471; }
+  .loading{ text-align:center; padding:40px; color:#8a8471; }
+
+  .modal-bg{ position:fixed; inset:0; background:rgba(22,38,28,0.5); display:none; align-items:center; justify-content:center; padding:16px; z-index:10;}
+  .modal-bg.show{ display:flex; }
+  .modal{ background:#fff; border-radius:var(--radius); padding:20px; width:100%; max-width:380px; }
+  .modal-actions{ display:flex; gap:10px; margin-top:16px; }
+  .err{ background:#FBEAE7; color:var(--error); border:1px solid #E3B3AB; border-radius:var(--radius); padding:8px 10px; font-size:13px; margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="stripe-header"></div>
+<div class="topbar">
+  <h1 id="staffName">Loading...</h1>
+  <div class="sub">My Queue</div>
+</div>
+<div class="wrap">
+  <input type="date" id="dateFilter">
+  <div id="list"><div class="loading">Loading...</div></div>
+</div>
+
+<div class="modal-bg" id="addServiceModalBg">
+  <div class="modal">
+    <h2 style="font-size:17px;margin-bottom:10px;">Add Service</h2>
+    <div id="addServiceList" style="border:1px solid var(--line);border-radius:6px;padding:8px;max-height:200px;overflow-y:auto;margin-bottom:10px;"></div>
+    <div id="addServiceErr"></div>
+    <div class="modal-actions">
+      <button class="btn notify" onclick="closeAddServiceModal()">Cancel</button>
+      <button class="btn complete" onclick="submitAddService()">Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://salon-booking-system.osamajunaid.workers.dev';
+const RATE_PAGE_URL = 'PASTE_YOUR_RATE_PAGE_URL_HERE'; // e.g. https://osamajunaid15.github.io/salon/rate.html
+
+const params = new URLSearchParams(window.location.search);
+const STAFF_ID = params.get('staff');
+let SALON_NAME = 'Salon';
+let INIT = null;
+
+async function apiGet(path, p){
+  const res = await fetch(API_URL + path + '?' + new URLSearchParams(p).toString());
+  return res.json();
+}
+async function apiPost(path, body){
+  const res = await fetch(API_URL + path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  return res.json();
+}
+
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+async function boot(){
+  if(!STAFF_ID){
+    document.getElementById('list').innerHTML = `<div class="empty">Link mein ?staff=STAFF_ID missing hai.</div>`;
+    return;
+  }
+  document.getElementById('dateFilter').value = todayStr();
+  INIT = await apiGet('/init', {});
+  SALON_NAME = INIT.salonName;
+  const me = INIT.staff.find(s=>s.id === STAFF_ID);
+  document.getElementById('staffName').textContent = me ? me.name : 'My Queue';
+  document.getElementById('dateFilter').addEventListener('change', load);
+  load();
+}
+
+async function load(){
+  const date = document.getElementById('dateFilter').value;
+  document.getElementById('list').innerHTML = `<div class="loading">Loading...</div>`;
+  const res = await apiGet('/bookings', { date, staffId: STAFF_ID });
+  if(!res.bookings || !res.bookings.length){
+    document.getElementById('list').innerHTML = `<div class="empty">Is din koi booking nahi hai.</div>`;
+    return;
+  }
+  const html = res.bookings.filter(b=>b.status !== 'Cancelled').map(b=>{
+    const photo = b.photo
+      ? `<img class="card-photo" src="${b.photo}">`
+      : `<div class="card-photo placeholder">${b.customerName.charAt(0).toUpperCase()}</div>`;
+    const actions = b.status === 'Confirmed' ? `
+      <div class="card-actions">
+        <button class="btn notify" onclick="notifyReady('${b.phone}','${esc(b.customerName)}')">Notify Ready</button>
+        <button class="btn notify" onclick="openAddServiceModal('${b.bookingId}','${b.serviceId}')">+ Service</button>
+        <button class="btn complete" onclick="markComplete('${b.bookingId}','${b.phone}','${esc(b.customerName)}')">Complete</button>
+      </div>` : '';
+    return `<div class="card">
+      <div class="card-top">
+        ${photo}
+        <div class="card-info">
+          <div class="card-time">${b.startTime} - ${b.endTime}</div>
+          <div class="card-name">${b.customerName} <span class="status-pill ${b.status}">${b.status}</span></div>
+          <div class="card-service">${b.serviceName}</div>
+        </div>
+      </div>
+      ${actions}
+    </div>`;
+  }).join('');
+  document.getElementById('list').innerHTML = html || `<div class="empty">Is din koi booking nahi hai.</div>`;
+}
+
+function esc(s){ return String(s).replace(/'/g,"\\'"); }
+
+function notifyReady(phone, name){
+  const msg = `Salaam ${name}! Main thori dair mein aapke liye free ho jaunga. Aap ab shop ke liye nikal sakte hain. — ${SALON_NAME}`;
+  window.open('https://wa.me/' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+async function markComplete(id, phone, name){
+  await apiPost('/complete', { bookingId:id });
+  const rateLink = RATE_PAGE_URL + '?id=' + id;
+  const msg = `Shukriya ${name}! Umeed hai service pasand aayi hogi. Apna anubhav rate karein: ${rateLink} — ${SALON_NAME}`;
+  window.open('https://wa.me/' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
+  load();
+}
+
+let addServiceCurrentBooking = null;
+function openAddServiceModal(bookingId, existingServiceIdCsv){
+  const existingIds = String(existingServiceIdCsv||'').split(',').map(s=>s.trim());
+  addServiceCurrentBooking = bookingId;
+  const list = document.getElementById('addServiceList');
+  list.innerHTML = INIT.services
+    .filter(s => !existingIds.includes(s.id))
+    .map(s => `
+      <label style="display:flex;align-items:center;gap:8px;padding:5px 2px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" value="${s.id}" class="addServiceCheck"> ${s.name} (${s.duration}m)${s.price ? ' — ' + s.price : ''}
+      </label>`).join('');
+  if(!list.innerHTML) list.innerHTML = `<div style="font-size:13px;color:#8a8471;">Baaki sab services already shamil hain.</div>`;
+  document.getElementById('addServiceErr').innerHTML = '';
+  document.getElementById('addServiceModalBg').classList.add('show');
+}
+function closeAddServiceModal(){
+  document.getElementById('addServiceModalBg').classList.remove('show');
+  addServiceCurrentBooking = null;
+}
+async function submitAddService(){
+  const serviceIds = Array.from(document.querySelectorAll('.addServiceCheck:checked')).map(c=>c.value);
+  if(serviceIds.length === 0){
+    document.getElementById('addServiceErr').innerHTML = `<div class="err">Kam az kam 1 service select karein.</div>`;
+    return;
+  }
+  const res = await apiPost('/add-service', { bookingId: addServiceCurrentBooking, serviceIds });
+  if(res.error){
+    document.getElementById('addServiceErr').innerHTML = `<div class="err">${res.error}</div>`;
+    return;
+  }
+  closeAddServiceModal();
+  load();
+  if(res.delayInfo){
+    const d = res.delayInfo;
+    const msg = `Salaam ${d.customerName}! Aapki appointment mein thori dair (~${d.overlapMinutes} minute) ki delay ho sakti hai. Maazrat ke sath. — ${SALON_NAME}`;
+    if(confirm(`${d.customerName} (${d.startTime}) ka time ${d.overlapMinutes} minute overlap ho jayega. Notify karna chahenge?`)){
+      window.open('https://wa.me/' + d.phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
+    }
+  }
+}
+
+setInterval(() => {
+  if (document.visibilityState === 'visible') {
+    load();
+  }
+}, 30000);
+
+boot();
+</script>
+</body>
+</html>

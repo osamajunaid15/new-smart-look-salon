@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reports</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12171C; --surface:#1B2229; --surface-2:#232B33;
+    --gold:#D4AF6A; --teal:#3FA79A;
+    --text:#F1EEE6; --text-dim:#9AA5AC;
+    --line:#2B343C; --error:#E0665C; --ok:#5FBF8F;
+    --radius:8px;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'Work Sans',sans-serif; background:var(--bg); color:var(--text); font-size:15px; }
+  h1,h2 { font-family:'Fraunces',serif; margin:0; font-weight:600; }
+  .topbar{ background:var(--surface); border-bottom:1px solid var(--line); padding:16px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
+  .topbar h1{ font-size:20px; color:#fff; }
+  .wrap{ max-width:900px; margin:0 auto; padding:24px 16px 60px; }
+  .btn{ padding:9px 16px; border:none; border-radius:6px; background:var(--gold); color:#1B1200; font-weight:600; cursor:pointer; font-size:13px; }
+  .btn.secondary{ background:transparent; color:var(--text); border:1px solid var(--line); }
+  .btn.active{ background:var(--gold); color:#1B1200; }
+  a.btn{ text-decoration:none; display:inline-block; }
+  .tabs{ display:flex; gap:8px; margin-bottom:18px; }
+  .range-row{ display:flex; gap:8px; margin-bottom:18px; }
+  .section{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:18px; }
+  table{ width:100%; border-collapse:collapse; }
+  th,td{ text-align:left; padding:10px 12px; font-size:13px; border-bottom:1px solid var(--line); }
+  th{ background:var(--surface-2); text-transform:uppercase; font-size:10px; letter-spacing:0.06em; color:var(--text-dim);}
+  tr:last-child td{ border-bottom:none; }
+  .loading{ text-align:center; padding:30px; color:var(--text-dim); }
+  .empty{ text-align:center; padding:30px; color:var(--text-dim); }
+  input[type=text]{ padding:9px 12px; border:1px solid var(--line); border-radius:6px; background:var(--surface-2); color:var(--text); font-size:14px; margin-bottom:14px; width:100%; max-width:300px;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>Reports</h1>
+  <a href="admin.html" class="btn secondary">← Back to Admin</a>
+</div>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="btn active" id="tabSalesBtn" onclick="showTab('sales')">Staff Sales</button>
+    <button class="btn secondary" id="tabCustomersBtn" onclick="showTab('customers')">Customers</button>
+  </div>
+
+  <div id="salesTab">
+    <div class="range-row">
+      <button class="btn active" id="rangeToday" onclick="loadSales('today')">Today</button>
+      <button class="btn secondary" id="rangeWeek" onclick="loadSales('week')">This Week</button>
+      <button class="btn secondary" id="rangeMonth" onclick="loadSales('month')">This Month</button>
+    </div>
+    <div class="section">
+      <div id="salesArea"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <div id="customersTab" style="display:none;">
+    <input type="text" id="customerSearch" placeholder="Naam ya phone se search karein..." oninput="renderCustomers()">
+    <div class="section">
+      <div id="customersArea"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://salon-booking-system.osamajunaid.workers.dev';
+let customersData = [];
+
+async function apiGet(path, params){
+  const res = await fetch(API_URL + path + '?' + new URLSearchParams(params).toString());
+  return res.json();
+}
+
+function showTab(tab){
+  document.getElementById('salesTab').style.display = tab==='sales' ? 'block':'none';
+  document.getElementById('customersTab').style.display = tab==='customers' ? 'block':'none';
+  document.getElementById('tabSalesBtn').className = tab==='sales' ? 'btn active' : 'btn secondary';
+  document.getElementById('tabCustomersBtn').className = tab==='customers' ? 'btn active' : 'btn secondary';
+  if(tab==='customers' && customersData.length===0) loadCustomers();
+}
+
+async function loadSales(range){
+  ['today','week','month'].forEach(r=>{
+    document.getElementById('range'+r.charAt(0).toUpperCase()+r.slice(1)).className = r===range ? 'btn active' : 'btn secondary';
+  });
+  document.getElementById('salesArea').innerHTML = `<div class="loading">Loading...</div>`;
+  const res = await apiGet('/reports/staff-sales', {range});
+  if(!res.staff || res.staff.length===0){
+    document.getElementById('salesArea').innerHTML = `<div class="empty">Is period mein koi completed booking nahi hai.</div>`;
+    return;
+  }
+  const grandTotal = res.staff.reduce((s,x)=>s+x.total,0);
+  let html = `<div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">${res.startDate} se ${res.endDate} tak</div>`;
+  html += `<table><thead><tr><th>Staff</th><th>Services Completed</th><th>Total Sales</th></tr></thead><tbody>`;
+  res.staff.forEach(s=>{
+    html += `<tr><td>${s.staffName}</td><td>${s.count}</td><td>Rs. ${s.total}</td></tr>`;
+  });
+  html += `<tr style="font-weight:700;"><td>Total</td><td>${res.staff.reduce((s,x)=>s+x.count,0)}</td><td>Rs. ${grandTotal}</td></tr>`;
+  html += `</tbody></table>`;
+  document.getElementById('salesArea').innerHTML = html;
+}
+
+async function loadCustomers(){
+  document.getElementById('customersArea').innerHTML = `<div class="loading">Loading...</div>`;
+  const res = await apiGet('/reports/customers', {});
+  customersData = res.customers || [];
+  renderCustomers();
+}
+
+function renderCustomers(){
+  const q = (document.getElementById('customerSearch').value || '').toLowerCase();
+  const filtered = customersData.filter(c =>
+    c.name.toLowerCase().includes(q) || (c.phone||'').includes(q)
+  );
+  if(filtered.length === 0){
+    document.getElementById('customersArea').innerHTML = `<div class="empty">Koi customer nahi mila.</div>`;
+    return;
+  }
+  let html = `<table><thead><tr><th>Name</th><th>Phone</th><th>Visits</th><th>Total Spend</th><th>Last Visit</th><th>Favorite Staff</th></tr></thead><tbody>`;
+  filtered.forEach(c=>{
+    html += `<tr>
+      <td>${c.name}</td>
+      <td>${c.phone || '—'}</td>
+      <td>${c.visits}</td>
+      <td>Rs. ${c.total}</td>
+      <td>${c.lastVisit}</td>
+      <td>${c.favoriteStaff || '—'}</td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  document.getElementById('customersArea').innerHTML = html;
+}
+
+loadSales('today');
+</script>
+</body>
+</html>

@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book an Appointment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1E2A22;
+    --paper:#F1EEE6;
+    --paper-2:#E7E2D6;
+    --brass:#B8893C;
+    --brass-dark:#8F6A2C;
+    --green:#24402F;
+    --green-deep:#16261C;
+    --line:#D8D1C0;
+    --error:#8C3B32;
+    --radius:4px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Work Sans', sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{
+    font-family:'Fraunces', serif;
+    margin:0;
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+
+  /* Signature: barber-stripe header */
+  .stripe-header{
+    height:8px;
+    width:100%;
+    background:repeating-linear-gradient(
+      -45deg,
+      var(--green) 0px, var(--green) 14px,
+      var(--brass) 14px, var(--brass) 20px,
+      var(--paper-2) 20px, var(--paper-2) 34px
+    );
+  }
+
+  .topbar{
+    background:var(--green-deep);
+    color:var(--paper);
+    padding:22px 20px 26px;
+    text-align:center;
+  }
+  .topbar .salon-name{
+    font-size:26px;
+    color:#fff;
+  }
+  .topbar .tagline{
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin-top:6px;
+  }
+
+  .wrap{
+    max-width:480px;
+    margin:0 auto;
+    padding:20px 16px 60px;
+  }
+
+  /* Step progress - barber stripe motif, small ticks */
+  .progress{
+    display:flex;
+    gap:6px;
+    margin:18px 0 26px;
+  }
+  .progress .tick{
+    flex:1;
+    height:5px;
+    border-radius:3px;
+    background:var(--line);
+    transition:background .3s ease;
+  }
+  .progress .tick.active{
+    background:var(--brass);
+  }
+  .progress .tick.done{
+    background:var(--green);
+  }
+
+  .step-label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.12em;
+    color:var(--brass-dark);
+    font-weight:600;
+    margin-bottom:6px;
+  }
+  .step-title{
+    font-size:22px;
+    margin-bottom:18px;
+  }
+
+  .card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:10px;
+    cursor:pointer;
+    transition:border-color .15s ease, box-shadow .15s ease, transform .1s ease;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .card:active{ transform:scale(0.99); }
+  .card:hover{ border-color:var(--brass); }
+  .card.selected{
+    border-color:var(--green);
+    box-shadow:inset 0 0 0 1px var(--green);
+    background:#F7F5EE;
+  }
+  .card-title{ font-weight:600; font-size:15px; }
+  .card-sub{ font-size:12px; color:#6b6558; margin-top:2px; }
+  .card-meta{ font-size:12px; color:var(--brass-dark); font-weight:600; white-space:nowrap; }
+
+  .btn{
+    display:block;
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:var(--radius);
+    background:var(--green);
+    color:#fff;
+    font-family:'Work Sans',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    cursor:pointer;
+    letter-spacing:0.02em;
+    margin-top:8px;
+  }
+  .btn:disabled{ background:#b8b3a4; cursor:not-allowed; }
+  .btn.secondary{
+    background:transparent;
+    color:var(--green);
+    border:1px solid var(--green);
+  }
+  .btn-row{ display:flex; gap:10px; margin-top:18px; }
+  .btn-row .btn{ margin-top:0; }
+
+  input[type=text], input[type=tel]{
+    width:100%;
+    padding:13px 12px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    font-family:'Work Sans',sans-serif;
+    font-size:16px;
+    margin-bottom:12px;
+    background:#fff;
+  }
+  input:focus{ outline:2px solid var(--brass); outline-offset:1px; }
+  label{ font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:#6b6558; font-weight:600; display:block; margin-bottom:5px;}
+
+  .date-scroll{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:6px;
+    margin-bottom:6px;
+  }
+  .date-pill{
+    flex:0 0 auto;
+    width:58px;
+    text-align:center;
+    padding:10px 4px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:#fff;
+    cursor:pointer;
+  }
+  .date-pill .dow{ font-size:10px; text-transform:uppercase; color:#8a8471; letter-spacing:.05em;}
+  .date-pill .dnum{ font-family:'Fraunces',serif; font-size:19px; font-weight:600; margin-top:2px;}
+  .date-pill.selected{ border-color:var(--green); background:var(--green); }
+  .date-pill.selected .dow{ color:#cfe0d3; }
+  .date-pill.selected .dnum{ color:#fff; }
+
+  .slot-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    margin-top:6px;
+  }
+  .slot{
+    padding:11px 4px;
+    text-align:center;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:#fff;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .slot.selected{ background:var(--brass); border-color:var(--brass); color:#fff; }
+  .slot.who{ font-size:10px; font-weight:400; display:block; color:#8a8471; margin-top:2px;}
+  .slot.selected .who{ color:#fff3de; }
+
+  .empty-msg{
+    text-align:center;
+    color:#8a8471;
+    font-size:14px;
+    padding:30px 10px;
+  }
+
+  .summary-box{
+    background:var(--green-deep);
+    color:var(--paper);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:16px;
+  }
+  .summary-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:14px;
+    padding:6px 0;
+    border-bottom:1px solid rgba(255,255,255,0.12);
+  }
+  .summary-row:last-child{ border-bottom:none; }
+  .summary-row .k{ color:#b9c6bd; }
+  .summary-row .v{ font-weight:600; }
+
+  .confirm-hero{
+    text-align:center;
+    padding:20px 0 6px;
+  }
+  .confirm-hero .mark{
+    width:56px; height:56px;
+    border-radius:50%;
+    background:var(--green);
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:28px;
+    margin:0 auto 14px;
+  }
+
+  .whatsapp-btn{
+    display:block;
+    width:100%;
+    padding:14px;
+    border-radius:var(--radius);
+    background:#1F7A4D;
+    color:#fff;
+    text-align:center;
+    text-decoration:none;
+    font-weight:600;
+    margin-top:10px;
+  }
+
+  .err{
+    background:#FBEAE7;
+    color:var(--error);
+    border:1px solid #E3B3AB;
+    border-radius:var(--radius);
+    padding:10px 12px;
+    font-size:13px;
+    margin-bottom:12px;
+  }
+
+  .loading{ text-align:center; padding:40px 0; color:#8a8471; font-size:14px; }
+
+  /* Persistent cart bar */
+  #cartBar{
+    position:fixed; left:0; right:0; bottom:0; z-index:20;
+    background:var(--green-deep); color:#fff;
+    padding:10px 16px; display:none;
+    box-shadow:0 -4px 14px rgba(0,0,0,0.15);
+  }
+  #cartBar.show{ display:block; }
+  .cart-inner{ max-width:480px; margin:0 auto; }
+  .cart-items{ display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; }
+  .cart-chip{
+    flex:0 0 auto; background:rgba(255,255,255,0.1); border-radius:12px;
+    padding:5px 8px 5px 10px; font-size:12px; display:flex; align-items:center; gap:6px; white-space:nowrap;
+  }
+  .cart-chip .x{ cursor:pointer; color:var(--brass); font-weight:700; padding:0 2px; }
+  .cart-total{ display:flex; justify-content:space-between; align-items:center; font-size:13px; }
+  .cart-total .amt{ font-family:'Fraunces',serif; font-size:17px; font-weight:600; color:var(--brass); }
+  .spinner{
+    width:22px;height:22px;border-radius:50%;
+    border:2px solid var(--line);
+    border-top-color:var(--brass);
+    animation:spin .8s linear infinite;
+    margin:0 auto 10px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="stripe-header"></div>
+<div class="topbar">
+  <div class="salon-name" id="salonName">Loading...</div>
+  <div class="tagline">Book your slot</div>
+</div>
+
+<div class="wrap" id="app" style="padding-bottom:90px;">
+  <div class="progress" id="progress"></div>
+  <div id="stepArea"><div class="loading"><div class="spinner"></div>Connecting...</div></div>
+  <div id="termsNote" style="font-size:11px; color:#8a8471; text-align:center; margin-top:24px; padding:0 10px; line-height:1.6;">
+    Yeh online booking system aapki (customer ki) suhulat ke liye banaya gaya hai, taake baar baar call kiye bagair slot book ho sake.<br>
+    <strong>Policy:</strong> Booked time par 15 minute tak intezar kiya jayega. Uske baad slot khud khaali ho jayega aur kisi aur customer ko diya ja sakta hai.
+  </div>
+</div>
+
+<div id="cartBar"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const API_URL = 'https://salon-booking-system.osamajunaid.workers.dev';
+const CANCEL_PAGE_URL = 'PASTE_YOUR_CANCEL_PAGE_URL_HERE'; // e.g. https://osamajunaid15.github.io/salon/cancel.html
+/* =========================================== */
+
+let INIT = null;
+let state = { step:1, serviceIds:[], staffId:null, staffName:null, date:null, time:null, endTime:null, name:'', phone:'' };
+const STEP_LABELS = ['Service','Professional','Date','Time','Your Details','Confirmed'];
+
+async function apiGet(path, params){
+  const url = API_URL + path + '?' + new URLSearchParams(params).toString();
+  const res = await fetch(url);
+  return res.json();
+}
+async function apiPost(path, body){
+  const res = await fetch(API_URL + path, {
+    method:'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+function renderProgress(){
+  const el = document.getElementById('progress');
+  el.innerHTML = '';
+  for(let i=1;i<=6;i++){
+    const t = document.createElement('div');
+    t.className = 'tick' + (i < state.step ? ' done' : (i === state.step ? ' active' : ''));
+    el.appendChild(t);
+  }
+}
+
+function stepHeader(title){
+  return `<div class="step-label">Step ${state.step} of 6 — ${STEP_LABELS[state.step-1]}</div><h2 class="step-title">${title}</h2>`;
+}
+
+/* ---------- PERSISTENT CART BAR ---------- */
+function renderCartBar(){
+  const bar = document.getElementById('cartBar');
+  if(state.step >= 5 || !state.serviceIds || state.serviceIds.length === 0){
+    bar.classList.remove('show');
+    bar.innerHTML = '';
+    return;
+  }
+  const selected = INIT.services.filter(s=>state.serviceIds.includes(s.id));
+  const canRemove = state.step <= 3 && !state.dealId; // package items are removed as a whole, not individually
+  const deal = state.dealId ? (INIT.deals||[]).find(d=>d.id===state.dealId) : null;
+  const chips = deal
+    ? `<div class="cart-chip">📦 ${deal.name} ${state.step<=3 ? `<span class="x" onclick="removeFromCart(null)">✕</span>` : ''}</div>`
+    : selected.map(s=>`
+      <div class="cart-chip">${s.name}${canRemove ? ` <span class="x" onclick="removeFromCart('${s.id}')">✕</span>` : ''}</div>
+    `).join('');
+  // Always shown as a range until Step 5, where the exact price is confirmed based on the chosen staff.
+  const totalLabel = deal ? `Rs. ${parsePriceNum(deal.price)}` : priceRangeForSelectedCart();
+  bar.innerHTML = `<div class="cart-inner">    <div class="cart-items">${chips}</div>
+    <div class="cart-total"><span>${selected.length} service${selected.length>1?'s':''} selected</span><span class="amt">${totalLabel}</span></div>
+  </div>`;
+  bar.classList.add('show');
+}
+function priceRangeForSelectedCart(){
+  const selected = INIT.services.filter(s=>state.serviceIds.includes(s.id));
+  let min=0, max=0, ok=true;
+  selected.forEach(s=>{
+    const overrides = (INIT.pricing||[]).filter(p=>p.serviceId===s.id).map(p=>parsePriceNum(p.price)).filter(n=>n!==null);
+    const base = parsePriceNum(s.price);
+    const all = base!==null ? [base,...overrides] : overrides;
+    if(all.length===0){ ok=false; return; }
+    min += Math.min(...all); max += Math.max(...all);
+  });
+  if(!ok) return '';
+  return min===max ? `Rs. ${min}` : `Rs. ${min}–${max}`;
+}
+function removeFromCart(id){
+  if(id === null){ // removing the whole package
+    state.dealId = null;
+    state.serviceIds = [];
+  } else {
+    const idx = state.serviceIds.indexOf(id);
+    if(idx !== -1) state.serviceIds.splice(idx,1);
+  }
+  renderStep1();
+}
+
+async function init(){
+  try{
+    INIT = await apiGet('/init', {});
+    if(INIT.error){ document.getElementById('stepArea').innerHTML = `<div class="err">${INIT.error}</div>`; return; }
+    document.getElementById('salonName').textContent = INIT.salonName;
+    renderProgress();
+    renderStep1();
+  }catch(err){
+    document.getElementById('stepArea').innerHTML = `<div class="err">Connection failed. Check API_URL in the code.</div>`;
+  }
+}
+
+/* ---------- PRICING HELPERS ---------- */
+function parsePriceNum(str){
+  const s = String(str||'');
+  const match = s.match(/(\d[\d,]*\.?\d*)/);
+  if(!match) return null;
+  const n = parseFloat(match[1].replace(/,/g,''));
+  return isNaN(n) ? null : n;
+}
+function priceRangeForService(serviceId, baseService){
+  const overrides = (INIT.pricing||[]).filter(p=>p.serviceId===serviceId).map(p=>parsePriceNum(p.price)).filter(n=>n!==null);
+  const base = parsePriceNum(baseService.price);
+  const all = base!==null ? [base, ...overrides] : overrides;
+  if(all.length === 0) return baseService.price || '';
+  const min = Math.min(...all), max = Math.max(...all);
+  if(min === max) return 'Rs. ' + min;
+  return `Rs. ${min} – ${max}`;
+}
+function totalPriceForStaff(staffId){
+  if(state.dealId){
+    const deal = (INIT.deals||[]).find(d=>d.id===state.dealId);
+    return deal ? parsePriceNum(deal.price) : null;
+  }
+  const selected = INIT.services.filter(s=>state.serviceIds.includes(s.id));
+  let total = 0, allNumeric = true;
+  selected.forEach(s=>{
+    const override = (INIT.pricing||[]).find(p=>p.staffId===staffId && p.serviceId===s.id);
+    const num = parsePriceNum(override ? override.price : s.price);
+    if(num === null) allNumeric = false; else total += num;
+  });
+  return allNumeric ? total : null;
+}
+
+/* ---------- STEP 1: SERVICE (multi-select) ---------- */
+function renderStep1(){
+  state.step = 1; renderProgress();
+  if(!state.serviceIds) state.serviceIds = [];
+  let html = stepHeader('What would you like done?');
+
+  if(INIT.deals && INIT.deals.length){
+    html += `<div style="font-size:12px;color:#8a8471;margin-bottom:8px;font-weight:600;">📦 Packages</div>`;
+    INIT.deals.forEach(d=>{
+      const isSelected = state.dealId === d.id;
+      const savings = d.actualPrice - parsePriceNum(d.price);
+      html += `<div class="card${isSelected ? ' selected' : ''}" data-id="${d.id}" onclick="selectDeal('${d.id}')">
+        <div>
+          <div class="card-title">${isSelected ? '✓ ' : ''}${d.name}</div>
+          <div class="card-sub">${d.serviceNames.join(' + ')} · ${d.duration} min</div>
+        </div>
+        <div class="card-meta">
+          ${savings > 0 ? `<div style="text-decoration:line-through;color:#8a8471;font-size:11px;">Rs. ${d.actualPrice}</div>` : ''}
+          <div>Rs. ${d.price}</div>
+          ${savings > 0 ? `<div style="color:var(--green);font-size:11px;font-weight:700;">Save Rs. ${savings}</div>` : ''}
+        </div>
+      </div>`;
+    });
+    html += `<div style="font-size:12px;color:#8a8471;margin:16px 0 8px;font-weight:600;">Ya alag alag services select karein</div>`;
+  } else {
+    html += `<div style="font-size:12px;color:#8a8471;margin-bottom:12px;">Ek ya zyada services select karein. Price professional ke hisaab se alag ho sakti hai.</div>`;
+  }
+
+  INIT.services.forEach(s=>{
+    const isSelected = !state.dealId && state.serviceIds.includes(s.id);
+    html += `<div class="card${isSelected ? ' selected' : ''}" data-id="${s.id}" onclick="toggleService('${s.id}')">
+      <div><div class="card-title">${isSelected ? '✓ ' : ''}${s.name}</div><div class="card-sub">${s.duration} min</div></div>
+      <div class="card-meta">${priceRangeForService(s.id, s)}</div>
+    </div>`;
+  });
+  html += `<div id="serviceSummary"></div>`;
+  html += `<div class="btn-row"><button class="btn" id="step1Continue" onclick="renderStep2()" disabled>Continue</button></div>`;
+  document.getElementById('stepArea').innerHTML = html;
+  updateServiceSummary();
+  renderCartBar();
+}
+function selectDeal(id){
+  const deal = INIT.deals.find(d=>d.id===id);
+  if(!deal) return;
+  state.dealId = id;
+  state.serviceIds = deal.serviceIds.slice();
+  renderStep1();
+}
+function toggleService(id){
+  state.dealId = null; // manually customizing services means this is no longer the fixed-price package
+  const idx = state.serviceIds.indexOf(id);
+  if(idx === -1) state.serviceIds.push(id); else state.serviceIds.splice(idx,1);
+  renderStep1();
+}
+function updateServiceSummary(){
+  const btn = document.getElementById('step1Continue');
+  const summaryEl = document.getElementById('serviceSummary');
+  if(state.serviceIds.length === 0){
+    if(btn) btn.disabled = true;
+    if(summaryEl) summaryEl.innerHTML = '';
+    return;
+  }
+  const selected = INIT.services.filter(s=>state.serviceIds.includes(s.id));
+  const totalMin = selected.reduce((sum,s)=>sum+s.duration,0);
+  if(btn) btn.disabled = false;
+  if(summaryEl){
+    summaryEl.innerHTML = `<div style="background:#F7F5EE;border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-top:6px;font-size:13px;">
+      <strong>${selected.length} service${selected.length>1?'s':''} selected</strong> — total ${totalMin} min
+    </div>`;
+  }
+}
+
+/* ---------- STEP 2: STAFF ---------- */
+function renderStep2(){
+  state.step = 2; renderProgress();
+  let html = stepHeader('Choose your professional');
+  html += `<div style="font-size:12px;color:#8a8471;margin-bottom:12px;">Final price agle step mein confirm hogi</div>`;
+  INIT.staff.forEach(s=>{
+    const stars = s.avgRating ? starHtml(s.avgRating) + ` <span style="color:#8a8471;font-size:12px;">(${s.ratingCount})</span>` : `<span style="color:#8a8471;font-size:12px;">No ratings yet</span>`;
+    html += `<div class="card" data-id="${s.id}" onclick="selectStaff('${s.id}','${s.name.replace(/'/g,"\\'")}')">
+      <div><div class="card-title">${s.name}</div><div class="card-sub">${stars}</div></div></div>`;
+  });
+  html += `<div class="card" onclick="selectStaff('any','Any Available Professional')">
+    <div><div class="card-title">Any Professional</div><div class="card-sub">Fastest available slot</div></div></div>`;
+  html += `<div class="btn-row"><button class="btn secondary" onclick="renderStep1()">Back</button></div>`;
+  document.getElementById('stepArea').innerHTML = html;
+  renderCartBar();
+}
+function starHtml(avg){
+  const full = Math.round(avg);
+  let s = '';
+  for(let i=1;i<=5;i++){ s += i <= full ? '★' : '☆'; }
+  return `<span style="color:var(--brass);letter-spacing:1px;">${s}</span> <span style="color:#6b6558;">${avg}</span>`;
+}
+function selectStaff(id,name){
+  state.staffId = id; state.staffName = name;
+  renderStep3();
+}
+
+/* ---------- STEP 3: DATE ---------- */
+function renderStep3(){
+  state.step = 3; renderProgress();
+  let html = stepHeader('Pick a date');
+  html += `<div class="date-scroll" id="dateScroll"></div>`;
+  html += `<div class="btn-row"><button class="btn secondary" onclick="renderStep2()">Back</button></div>`;
+  document.getElementById('stepArea').innerHTML = html;
+  renderCartBar();
+
+  const scroll = document.getElementById('dateScroll');
+  const today = new Date();
+  const dows = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  for(let i=0;i<INIT.advanceDays;i++){
+    const d = new Date(today);
+    d.setDate(today.getDate()+i);
+    const dowNum = d.getDay();
+    if(INIT.offDays.includes(String(dowNum))) continue;
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const pill = document.createElement('div');
+    pill.className = 'date-pill';
+    pill.innerHTML = `<div class="dow">${dows[dowNum]}</div><div class="dnum">${d.getDate()}</div>`;
+    pill.onclick = ()=>selectDate(key, pill);
+    scroll.appendChild(pill);
+  }
+}
+function selectDate(key, pillEl){
+  document.querySelectorAll('.date-pill').forEach(p=>p.classList.remove('selected'));
+  pillEl.classList.add('selected');
+  state.date = key;
+  setTimeout(()=>renderStep4(), 150);
+}
+
+/* ---------- STEP 4: TIME ---------- */
+async function renderStep4(){
+  state.step = 4; renderProgress();
+  document.getElementById('stepArea').innerHTML = stepHeader('Available slots') + `<div class="loading"><div class="spinner"></div>Checking availability...</div>`;
+  const res = await apiGet('/slots', {date:state.date, staffId:state.staffId, serviceIds:state.serviceIds.join(',')});
+  let html = stepHeader('Available slots');
+  if(res.error === 'ABSENT'){
+    html += `<div class="err">${res.message} Koi doosra professional ya "Any Professional" try karein.</div>`;
+  } else if(res.error){
+    html += `<div class="err">${res.error}</div>`;
+  } else if(res.slots.length === 0){
+    html += `<div class="empty-msg">Is din koi slot available nahi hai. Koi aur date try karein.</div>`;
+  } else {
+    html += `<div class="slot-grid" id="slotGrid"></div>`;
+  }
+  html += `<div class="btn-row"><button class="btn secondary" onclick="renderStep3()">Back</button></div>`;
+  document.getElementById('stepArea').innerHTML = html;
+  renderCartBar();
+
+  if(res.slots && res.slots.length){
+    const grid = document.getElementById('slotGrid');
+    res.slots.forEach(sl=>{
+      const div = document.createElement('div');
+      div.className = 'slot';
+      const whoLabel = state.staffId === 'any'
+        ? (sl.freeStaff.length === 1 ? sl.freeStaff[0].name : sl.freeStaff.length + ' available')
+        : '';
+      div.innerHTML = formatTime(sl.time) + (whoLabel ? `<span class="who">${whoLabel}</span>` : '');
+      div.onclick = ()=>{
+        document.querySelectorAll('.slot').forEach(s=>s.classList.remove('selected'));
+        div.classList.add('selected');
+        state.time = sl.time;
+        state.endTime = sl.endTime;
+        // if "any", lock in the first free staff shown for display purposes; server re-verifies anyway
+        if(state.staffId === 'any' && sl.freeStaff.length){
+          state.pickedAnyName = sl.freeStaff[0].name;
+        }
+        setTimeout(()=>renderStep5(), 150);
+      };
+      grid.appendChild(div);
+    });
+  }
+}
+function formatTime(t){
+  const [h,m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return h12 + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+}
+
+/* ---------- STEP 5: DETAILS ---------- */
+function renderStep5(){
+  state.step = 5; renderProgress();
+  let html = stepHeader('Your details');
+  html += priceSummaryHtml();
+  html += `
+    <label>Full name</label>
+    <input type="text" id="custName" placeholder="e.g. Ali Ahmed" value="${state.name}">
+    <label>Phone number</label>
+    <input type="tel" id="custPhone" placeholder="03xx-xxxxxxx" value="${state.phone}">
+    <label>Your photo (optional — helps staff recognize you)</label>
+    <div style="display:flex; gap:10px; margin-bottom:10px;">
+      <button type="button" class="btn secondary" style="flex:1;" onclick="document.getElementById('custPhotoCamera').click()">📷 Take a Photo</button>
+      <button type="button" class="btn secondary" style="flex:1;" onclick="document.getElementById('custPhotoGallery').click()">🖼️ Choose Photo</button>
+    </div>
+    <input type="file" id="custPhotoCamera" accept="image/*" capture="user" style="display:none;">
+    <input type="file" id="custPhotoGallery" accept="image/*" style="display:none;">
+    <div id="photoPreview"></div>
+    <div id="formErr"></div>
+    <div class="btn-row">
+      <button class="btn secondary" onclick="renderStep4()">Back</button>
+      <button class="btn" onclick="submitBooking()">Confirm Booking</button>
+    </div>
+  `;
+  document.getElementById('stepArea').innerHTML = html;
+
+  const handlePhoto = function(e){
+    const file = e.target.files[0];
+    if(!file) { return; }
+    if(file.size > 1500000){
+      document.getElementById('photoPreview').innerHTML = `<div class="err">Photo bohat badi hai, chota size ki photo try karein (max ~1.5MB).</div>`;
+      state.photoBase64 = null;
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      state.photoBase64 = ev.target.result;
+      document.getElementById('photoPreview').innerHTML = `<img src="${ev.target.result}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;margin-bottom:10px;border:1px solid var(--line);">`;
+    };
+    reader.readAsDataURL(file);
+  };
+  document.getElementById('custPhotoCamera').addEventListener('change', handlePhoto);
+  document.getElementById('custPhotoGallery').addEventListener('change', handlePhoto);
+  renderCartBar();
+}
+
+function priceSummaryHtml(){
+  const selected = INIT.services.filter(s=>state.serviceIds.includes(s.id));
+  const deal = state.dealId ? (INIT.deals||[]).find(d=>d.id===state.dealId) : null;
+  if(deal){
+    const actual = deal.actualPrice;
+    const dealPrice = parsePriceNum(deal.price);
+    const savings = actual - dealPrice;
+    return `<div class="summary-box">
+      <div class="summary-row"><span class="k">📦 ${deal.name}</span><span class="v">${deal.serviceNames.join(', ')}</span></div>
+      ${savings > 0 ? `<div class="summary-row"><span class="k">Actual price</span><span class="v" style="text-decoration:line-through;color:#8a8471;">Rs. ${actual}</span></div>` : ''}
+      <div class="summary-row"><span class="k">Total</span><span class="v">Rs. ${dealPrice}</span></div>
+      ${savings > 0 ? `<div class="summary-row"><span class="k" style="color:var(--green);font-weight:700;">You save</span><span class="v" style="color:var(--green);font-weight:700;">Rs. ${savings}</span></div>` : ''}
+    </div>`;
+  }
+  let total = 0, hasNumeric = true;
+  const lines = selected.map(s=>{
+    const override = (INIT.pricing||[]).find(p=>p.staffId===state.staffId && p.serviceId===s.id);
+    const priceStr = override ? override.price : (s.price || '');
+    const num = parsePriceNum(priceStr);
+    if(num === null) hasNumeric = false; else total += num;
+    return `<div class="summary-row"><span class="k">${s.name}</span><span class="v">${priceStr||'—'}</span></div>`;
+  }).join('');
+  const totalLine = hasNumeric ? `<div class="summary-row"><span class="k">Total</span><span class="v">Rs. ${total}</span></div>` : '';
+  return `<div class="summary-box">${lines}${totalLine}</div>`;
+}
+
+async function submitBooking(){
+  const name = document.getElementById('custName').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  if(!name || !phone){
+    document.getElementById('formErr').innerHTML = `<div class="err">Naam aur phone number dono zaroori hain.</div>`;
+    return;
+  }
+  state.name = name; state.phone = phone;
+
+  document.getElementById('stepArea').innerHTML = stepHeader('Confirming...') + `<div class="loading"><div class="spinner"></div>Booking your slot...</div>`;
+
+  const res = await apiPost('/book', {
+    date: state.date,
+    time: state.time,
+    staffId: state.staffId,
+    serviceIds: state.serviceIds,
+    dealId: state.dealId || null,
+    customerName: state.name,
+    phone: state.phone,
+    photo: state.photoBase64 || null
+  });
+
+  if(res.error){
+    renderStep5();
+    setTimeout(()=>{
+      const msg = res.message || res.error;
+      document.getElementById('formErr').innerHTML = `<div class="err">${msg}</div>`;
+      if(res.error === 'CLASH'){
+        // clash happened - force them to repick a time
+        setTimeout(()=>renderStep4(), 1200);
+      }
+    }, 10);
+    return;
+  }
+  renderStep6(res);
+}
+
+/* ---------- STEP 6: CONFIRMATION ---------- */
+function renderStep6(res){
+  state.step = 6; renderProgress();
+  const msg = `Booking Confirmed ✅\n${res.salonName}\nService: ${res.serviceName}\nWith: ${res.staffName}\nDate: ${res.date}\nTime: ${formatTime(res.time)} - ${formatTime(res.endTime)}\nName: ${state.name}\nBooking ID: ${res.bookingId}\n\nCancel karna ho to: ${CANCEL_PAGE_URL}?id=${res.bookingId}`;
+  const waLink = 'https://wa.me/?text=' + encodeURIComponent(msg);
+
+  let html = `
+    <div class="confirm-hero">
+      <div class="mark">✓</div>
+      <h2 class="step-title">Booking Confirmed</h2>
+    </div>
+    <div class="summary-box">
+      <div class="summary-row"><span class="k">Service</span><span class="v">${res.serviceName}</span></div>
+      <div class="summary-row"><span class="k">Professional</span><span class="v">${res.staffName}</span></div>
+      <div class="summary-row"><span class="k">Date</span><span class="v">${res.date}</span></div>
+      <div class="summary-row"><span class="k">Time</span><span class="v">${formatTime(res.time)} - ${formatTime(res.endTime)}</span></div>
+      <div class="summary-row"><span class="k">Booking ID</span><span class="v">${res.bookingId}</span></div>
+    </div>
+    <a class="whatsapp-btn" href="${waLink}" target="_blank">Share on WhatsApp</a>
+    <div class="btn-row"><button class="btn secondary" onclick="location.reload()">Book Another Slot</button></div>
+    <div style="text-align:center;margin-top:14px;">
+      <a href="${CANCEL_PAGE_URL}?id=${res.bookingId}" style="font-size:12px;color:#8a8471;text-decoration:underline;" target="_blank">Cancel this booking</a>
+    </div>
+  `;
+  document.getElementById('stepArea').innerHTML = html;
+  renderCartBar();
+}
+
+init();
+</script>
+</body>
+</html>
