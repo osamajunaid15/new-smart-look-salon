@@ -50,24 +50,57 @@
 </head>
 <body>
 <div class="stripe-header"></div>
+<div id="loginGate" style="display:none; position:fixed; inset:0; background:var(--paper); z-index:100; align-items:center; justify-content:center; flex-direction:column;">
+  <div style="background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:32px; max-width:340px; width:90%; text-align:center;">
+    <h1 style="font-size:20px; margin-bottom:4px;">🔒 Admin Login</h1>
+    <div style="color:#6b6558; font-size:13px; margin-bottom:18px;">Password daal kar settings access karein</div>
+    <input type="password" id="loginPasswordInput" placeholder="Password" style="width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:6px; font-size:14px; margin-bottom:8px;" onkeydown="if(event.key==='Enter') submitLogin()">
+    <div id="loginErr" style="display:none; color:var(--error); font-size:12px; margin-bottom:8px;">Ghalat password, dobara try karein.</div>
+    <button class="btn" style="width:100%;" onclick="submitLogin()">Login</button>
+  </div>
+</div>
+<div id="mainContent" style="display:none;">
 <div class="topbar"><h1>Salon Settings</h1><a href="admin.html" style="color:#fff;font-size:13px;text-decoration:none;border:1px solid rgba(255,255,255,0.4);padding:6px 12px;border-radius:4px;">← Back to Admin</a></div>
 <div class="wrap" id="app"><div class="loading">Loading...</div></div>
+</div>
 
 <script>
 const API_URL = 'https://salon-booking-system.osamajunaid.workers.dev';
 let DATA = null;
+let ADMIN_PASSWORD = localStorage.getItem('adminPassword') || '';
 
 async function apiGet(path, params){
-  const res = await fetch(API_URL + path + '?' + new URLSearchParams(params||{}).toString());
+  const res = await fetch(API_URL + path + '?' + new URLSearchParams(params||{}).toString(), { headers:{'X-Admin-Password': ADMIN_PASSWORD} });
+  if(res.status === 401){ showLoginGate(true); return {error:'UNAUTHORIZED'}; }
   return res.json();
 }
 async function apiPost(path, body){
-  const res = await fetch(API_URL + path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const res = await fetch(API_URL + path, { method:'POST', headers:{'Content-Type':'application/json', 'X-Admin-Password': ADMIN_PASSWORD}, body: JSON.stringify(body) });
+  if(res.status === 401){ showLoginGate(true); return {error:'UNAUTHORIZED'}; }
   return res.json();
+}
+function showLoginGate(wrongPassword){
+  localStorage.removeItem('adminPassword');
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('loginGate').style.display = 'flex';
+  document.getElementById('loginErr').style.display = wrongPassword ? 'block' : 'none';
+}
+async function submitLogin(){
+  ADMIN_PASSWORD = document.getElementById('loginPasswordInput').value;
+  const test = await apiGet('/admin/full', {});
+  if(test.error === 'UNAUTHORIZED') return;
+  localStorage.setItem('adminPassword', ADMIN_PASSWORD);
+  document.getElementById('loginGate').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+  DATA = test;
+  render();
 }
 
 async function boot(){
+  if(!ADMIN_PASSWORD){ showLoginGate(false); return; }
+  document.getElementById('mainContent').style.display = 'block';
   DATA = await apiGet('/admin/full', {});
+  if(DATA.error) return;
   render();
 }
 

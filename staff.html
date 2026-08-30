@@ -164,7 +164,7 @@ function notifyReady(phone, name){
 async function markComplete(id, phone, name){
   await apiPost('/complete', { bookingId:id });
   const rateLink = RATE_PAGE_URL + '?id=' + id;
-  const msg = `Shukriya ${name}! Umeed hai service pasand aayi hogi. Apna anubhav rate karein: ${rateLink}\n\nAgli baar dobara booking ke liye yeh link use karein: ${BOOKING_PAGE_URL} — ${SALON_NAME}`;
+  const msg = `Shukriya ${name}! Umeed hai service pasand aayi hogi. Apni service ko rate karein: ${rateLink}\n\nAgli baar dobara booking ke liye yeh link use karein: ${BOOKING_PAGE_URL} — ${SALON_NAME}`;
   window.open('https://wa.me/' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
   load();
 }

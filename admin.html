@@ -93,6 +93,17 @@
 </style>
 </head>
 <body>
+<div id="loginGate" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:100; align-items:center; justify-content:center; flex-direction:column;">
+  <div style="background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:32px; max-width:340px; width:90%; text-align:center;">
+    <h1 style="color:#fff; font-size:20px; margin-bottom:4px;">🔒 Admin Login</h1>
+    <div style="color:var(--text-dim); font-size:13px; margin-bottom:18px;">Password daal kar dashboard access karein</div>
+    <input type="password" id="loginPasswordInput" placeholder="Password" style="width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:6px; background:var(--surface-2); color:var(--text); font-size:14px; margin-bottom:8px;" onkeydown="if(event.key==='Enter') submitLogin()">
+    <div id="loginErr" style="display:none; color:var(--error); font-size:12px; margin-bottom:8px;">Ghalat password, dobara try karein.</div>
+    <button class="btn" style="width:100%;" onclick="submitLogin()">Login</button>
+  </div>
+</div>
+
+<div id="mainContent" style="display:none;">
 <div class="topbar">
   <div class="brand"><span class="dot"></span><h1 id="salonName">Salon Admin</h1></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -100,6 +111,7 @@
     <a href="reports.html" class="btn secondary">📊 Reports</a>
     <button class="btn secondary" onclick="openManualModal(true)">🚶 Walk-in</button>
     <button class="btn" onclick="openManualModal(false)">+ Add Booking</button>
+    <button class="btn secondary" onclick="logout()">🔒 Logout</button>
   </div>
 </div>
 
@@ -167,25 +179,51 @@
     </div>
   </div>
 </div>
+</div>
 
 <script>
 const API_URL = 'https://salon-booking-system.osamajunaid.workers.dev'; // e.g. https://salon-booking-system.yourname.workers.dev
 const RATE_PAGE_URL = 'https://osamajunaid15.github.io/new-smart-look-salon/rate.html'; // e.g. https://osamajunaid15.github.io/salon/rate.html
 const BOOKING_PAGE_URL = 'https://osamajunaid15.github.io/new-smart-look-salon/booking.html'; // e.g. https://osamajunaid15.github.io/salon/booking.html
 let INIT = null;
+let ADMIN_PASSWORD = localStorage.getItem('adminPassword') || '';
 
 async function apiGet(path, params){
   const url = API_URL + path + '?' + new URLSearchParams(params).toString();
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: { 'X-Admin-Password': ADMIN_PASSWORD } });
+  if(res.status === 401){ showLoginGate(true); return { error: 'UNAUTHORIZED' }; }
   return res.json();
 }
 async function apiPost(path, body){
   const res = await fetch(API_URL + path, {
     method:'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Password': ADMIN_PASSWORD },
     body: JSON.stringify(body)
   });
+  if(res.status === 401){ showLoginGate(true); return { error: 'UNAUTHORIZED' }; }
   return res.json();
+}
+
+function showLoginGate(wrongPassword){
+  localStorage.removeItem('adminPassword');
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('loginGate').style.display = 'flex';
+  document.getElementById('loginErr').style.display = wrongPassword ? 'block' : 'none';
+}
+async function submitLogin(){
+  ADMIN_PASSWORD = document.getElementById('loginPasswordInput').value;
+  const test = await apiGet('/attendance', { date: todayStr() });
+  if(test.error === 'UNAUTHORIZED'){
+    return; // showLoginGate already called by apiGet
+  }
+  localStorage.setItem('adminPassword', ADMIN_PASSWORD);
+  document.getElementById('loginGate').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+  boot();
+}
+function logout(){
+  localStorage.removeItem('adminPassword');
+  location.reload();
 }
 
 function todayStr(){
@@ -242,6 +280,7 @@ async function loadCustomerCancellations(){
 async function loadAttendance(){
   const date = document.getElementById('dateFilter').value;
   const res = await apiGet('/attendance', {date});
+  if(!res.attendance) return; // login gate already shown by apiGet if unauthorized
   const row = document.getElementById('attendanceRow');
   row.innerHTML = res.attendance.map(a => `
     <div class="attendance-chip ${a.status==='Absent'?'absent':''}">
@@ -350,7 +389,7 @@ function notifyReady(phone, name, staffName){
 async function completeBooking(id, phone, name, staffName){
   await apiPost('/complete', {bookingId:id});
   const rateLink = RATE_PAGE_URL + '?id=' + id;
-  const msg = `Shukriya ${name}! Umeed hai ${staffName} ki service pasand aayi hogi. Apna anubhav rate karein: ${rateLink}\n\nAgli baar dobara booking ke liye yeh link use karein: ${BOOKING_PAGE_URL} — ${INIT.salonName}`;
+  const msg = `Shukriya ${name}! Umeed hai ${staffName} ki service pasand aayi hogi. Apni service ko rate karein: ${rateLink}\n\nAgli baar dobara booking ke liye yeh link use karein: ${BOOKING_PAGE_URL} — ${INIT.salonName}`;
   window.open('https://wa.me/' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
   loadBookings();
 }
@@ -457,12 +496,18 @@ async function submitAddService(){
 // Auto-refresh every 30 seconds so new bookings show up without manually clicking Refresh.
 // Pauses when the tab isn't visible (e.g. minimized) to avoid wasted requests.
 setInterval(() => {
-  if (document.visibilityState === 'visible') {
+  if (document.visibilityState === 'visible' && ADMIN_PASSWORD) {
     loadAll();
   }
 }, 30000);
 
-boot();
+// Init: if we already have a saved password, try it silently; otherwise show the login screen.
+if(ADMIN_PASSWORD){
+  document.getElementById('mainContent').style.display = 'block';
+  boot();
+} else {
+  showLoginGate(false);
+}
 </script>
 </body>
 </html>

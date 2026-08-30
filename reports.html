@@ -37,6 +37,17 @@
 </style>
 </head>
 <body>
+<div id="loginGate" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:100; align-items:center; justify-content:center; flex-direction:column;">
+  <div style="background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:32px; max-width:340px; width:90%; text-align:center;">
+    <h1 style="color:#fff; font-size:20px; margin-bottom:4px;">🔒 Admin Login</h1>
+    <div style="color:var(--text-dim); font-size:13px; margin-bottom:18px;">Password daal kar reports access karein</div>
+    <input type="password" id="loginPasswordInput" placeholder="Password" style="width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:6px; background:var(--surface-2); color:var(--text); font-size:14px; margin-bottom:8px;" onkeydown="if(event.key==='Enter') submitLogin()">
+    <div id="loginErr" style="display:none; color:var(--error); font-size:12px; margin-bottom:8px;">Ghalat password, dobara try karein.</div>
+    <button class="btn" style="width:100%;" onclick="submitLogin()">Login</button>
+  </div>
+</div>
+
+<div id="mainContent" style="display:none;">
 <div class="topbar">
   <h1>Reports</h1>
   <a href="admin.html" class="btn secondary">← Back to Admin</a>
@@ -66,14 +77,32 @@
     </div>
   </div>
 </div>
+</div>
 
 <script>
 const API_URL = 'https://salon-booking-system.osamajunaid.workers.dev';
 let customersData = [];
+let ADMIN_PASSWORD = localStorage.getItem('adminPassword') || '';
 
 async function apiGet(path, params){
-  const res = await fetch(API_URL + path + '?' + new URLSearchParams(params).toString());
+  const res = await fetch(API_URL + path + '?' + new URLSearchParams(params).toString(), { headers:{'X-Admin-Password': ADMIN_PASSWORD} });
+  if(res.status === 401){ showLoginGate(true); return {error:'UNAUTHORIZED'}; }
   return res.json();
+}
+function showLoginGate(wrongPassword){
+  localStorage.removeItem('adminPassword');
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('loginGate').style.display = 'flex';
+  document.getElementById('loginErr').style.display = wrongPassword ? 'block' : 'none';
+}
+async function submitLogin(){
+  ADMIN_PASSWORD = document.getElementById('loginPasswordInput').value;
+  const test = await apiGet('/reports/staff-sales', {range:'today'});
+  if(test.error === 'UNAUTHORIZED') return;
+  localStorage.setItem('adminPassword', ADMIN_PASSWORD);
+  document.getElementById('loginGate').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+  renderSalesData(test);
 }
 
 function showTab(tab){
@@ -90,6 +119,10 @@ async function loadSales(range){
   });
   document.getElementById('salesArea').innerHTML = `<div class="loading">Loading...</div>`;
   const res = await apiGet('/reports/staff-sales', {range});
+  if(res.error) return; // login gate already shown
+  renderSalesData(res);
+}
+function renderSalesData(res){
   if(!res.staff || res.staff.length===0){
     document.getElementById('salesArea').innerHTML = `<div class="empty">Is period mein koi completed booking nahi hai.</div>`;
     return;
@@ -136,7 +169,12 @@ function renderCustomers(){
   document.getElementById('customersArea').innerHTML = html;
 }
 
-loadSales('today');
+if(ADMIN_PASSWORD){
+  document.getElementById('mainContent').style.display = 'block';
+  loadSales('today');
+} else {
+  showLoginGate(false);
+}
 </script>
 </body>
 </html>
