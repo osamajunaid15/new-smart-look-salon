@@ -155,17 +155,22 @@ async function load(){
 }
 
 function esc(s){ return String(s).replace(/'/g,"\\'"); }
+function waNumber(phone){
+  let digits = String(phone||'').replace(/[^0-9]/g,'');
+  if(digits.startsWith('0')) digits = '92' + digits.slice(1);
+  return digits;
+}
 
 function notifyReady(phone, name){
   const msg = `Salaam ${name}! Main thori dair mein aapke liye free ho jaunga. Aap ab shop ke liye nikal sakte hain. — ${SALON_NAME}`;
-  window.open('https://wa.me/' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
+  window.open('https://wa.me/' + waNumber(phone) + '?text=' + encodeURIComponent(msg), '_blank');
 }
 
 async function markComplete(id, phone, name){
   await apiPost('/complete', { bookingId:id });
   const rateLink = RATE_PAGE_URL + '?id=' + id;
   const msg = `Shukriya ${name}! Umeed hai service pasand aayi hogi. Apni service ko rate karein: ${rateLink}\n\nAgli baar dobara booking ke liye yeh link use karein: ${BOOKING_PAGE_URL} — ${SALON_NAME}`;
-  window.open('https://wa.me/' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
+  window.open('https://wa.me/' + waNumber(phone) + '?text=' + encodeURIComponent(msg), '_blank');
   load();
 }
 
@@ -205,7 +210,7 @@ async function submitAddService(){
     const d = res.delayInfo;
     const msg = `Salaam ${d.customerName}! Aapki appointment mein thori dair (~${d.overlapMinutes} minute) ki delay ho sakti hai. Maazrat ke sath. — ${SALON_NAME}`;
     if(confirm(`${d.customerName} (${d.startTime}) ka time ${d.overlapMinutes} minute overlap ho jayega. Notify karna chahenge?`)){
-      window.open('https://wa.me/' + d.phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
+      window.open('https://wa.me/' + waNumber(d.phone) + '?text=' + encodeURIComponent(msg), '_blank');
     }
   }
 }

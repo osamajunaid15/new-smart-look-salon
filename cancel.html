@@ -88,7 +88,17 @@ function render(alreadyCancelled){
     </div>
     <div id="err"></div>
     <button class="btn danger" onclick="confirmCancel()">Yes, Cancel This Booking</button>
-    <button class="btn secondary" onclick="window.close()">Keep My Booking</button>
+    <button class="btn secondary" onclick="keepBooking()">Keep My Booking</button>
+  `;
+}
+
+function keepBooking(){
+  document.getElementById('app').innerHTML = `
+    <div class="done">
+      <div class="mark">✓</div>
+      <h2>Booking Rakhi Gayi Hai</h2>
+      <div style="color:#6b6558;margin-top:8px;font-size:14px;">Kuch nahi badla, aapki booking waisi hi confirmed hai. Aap yeh tab ab band kar sakte hain.</div>
+    </div>
   `;
 }
 

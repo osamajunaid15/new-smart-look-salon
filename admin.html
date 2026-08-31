@@ -237,6 +237,13 @@ function parsePriceNum(str){
   const n = parseFloat(match[1].replace(/,/g,''));
   return isNaN(n) ? 0 : n;
 }
+// wa.me needs the FULL international number with no leading 0 (e.g. 923001234567,
+// not 03001234567) — otherwise WhatsApp misreads it as some other country's number.
+function waNumber(phone){
+  let digits = String(phone||'').replace(/[^0-9]/g,'');
+  if(digits.startsWith('0')) digits = '92' + digits.slice(1);
+  return digits;
+}
 
 async function boot(){
   document.getElementById('dateFilter').value = todayStr();
@@ -310,7 +317,7 @@ function showAffectedBookings(list){
     const msg = `Salaam ${b.customerName}! Maazrat ke sath, aaj aapke professional available nahi honge, isliye aapki ${b.startTime} ki booking (${b.serviceName}) cancel kar di gayi hai. Naya slot book karne ke liye yahan click karein: ${BOOKING_PAGE_URL} — ${INIT.salonName}`;
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">
       <span>${b.customerName} — ${b.startTime} (${b.serviceName})</span>
-      <button class="btn secondary" style="padding:6px 10px;font-size:12px;" onclick="window.open('https://wa.me/${b.phone.replace(/[^0-9]/g,'')}?text=${encodeURIComponent(msg)}','_blank')">Notify (WhatsApp)</button>
+      <button class="btn secondary" style="padding:6px 10px;font-size:12px;" onclick="window.open('https://wa.me/${waNumber(b.phone)}?text=${encodeURIComponent(msg)}','_blank')">Notify (WhatsApp)</button>
     </div>`;
   }).join('');
   document.getElementById('affectedPanel').innerHTML = `
@@ -326,7 +333,7 @@ function showRestoredBookings(list){
     const msg = `Khushkhabri ${b.customerName}! Aapka professional wapis aa gaya hai. Aapki ${b.startTime} ki booking (${b.serviceName}) wapis confirm ho gayi hai. — ${INIT.salonName}`;
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">
       <span>${b.customerName} — ${b.startTime} (${b.serviceName})</span>
-      <button class="btn secondary" style="padding:6px 10px;font-size:12px;" onclick="window.open('https://wa.me/${b.phone.replace(/[^0-9]/g,'')}?text=${encodeURIComponent(msg)}','_blank')">Notify (WhatsApp)</button>
+      <button class="btn secondary" style="padding:6px 10px;font-size:12px;" onclick="window.open('https://wa.me/${waNumber(b.phone)}?text=${encodeURIComponent(msg)}','_blank')">Notify (WhatsApp)</button>
     </div>`;
   }).join('');
   document.getElementById('restoredPanel').innerHTML = `
@@ -383,14 +390,14 @@ async function loadBookings(){
 
 function notifyReady(phone, name, staffName){
   const msg = `Salaam ${name}! ${staffName} thori dair mein aapke liye free ho jayenge. Aap ab shop ke liye nikal sakte hain. — ${INIT.salonName}`;
-  window.open('https://wa.me/' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
+  window.open('https://wa.me/' + waNumber(phone) + '?text=' + encodeURIComponent(msg), '_blank');
 }
 
 async function completeBooking(id, phone, name, staffName){
   await apiPost('/complete', {bookingId:id});
   const rateLink = RATE_PAGE_URL + '?id=' + id;
   const msg = `Shukriya ${name}! Umeed hai ${staffName} ki service pasand aayi hogi. Apni service ko rate karein: ${rateLink}\n\nAgli baar dobara booking ke liye yeh link use karein: ${BOOKING_PAGE_URL} — ${INIT.salonName}`;
-  window.open('https://wa.me/' + phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
+  window.open('https://wa.me/' + waNumber(phone) + '?text=' + encodeURIComponent(msg), '_blank');
   loadBookings();
 }
 
@@ -488,7 +495,7 @@ async function submitAddService(){
     const d = res.delayInfo;
     const msg = `Salaam ${d.customerName}! Aapki appointment mein thori dair (~${d.overlapMinutes} minute) ki delay ho sakti hai kyunke pichla customer ka kaam thora lamba chal raha hai. Maazrat ke sath. — ${INIT.salonName}`;
     if(confirm(`Yeh add karne se ${d.customerName} (${d.startTime}) ka time ${d.overlapMinutes} minute overlap ho jayega. Unhe WhatsApp pe notify karna chahenge?`)){
-      window.open('https://wa.me/' + d.phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
+      window.open('https://wa.me/' + waNumber(d.phone) + '?text=' + encodeURIComponent(msg), '_blank');
     }
   }
 }

@@ -656,15 +656,35 @@ function renderStep5(){
   const handlePhoto = function(e){
     const file = e.target.files[0];
     if(!file) { return; }
-    if(file.size > 1500000){
-      document.getElementById('photoPreview').innerHTML = `<div class="err">Photo bohat badi hai, chota size ki photo try karein (max ~1.5MB).</div>`;
-      state.photoBase64 = null;
-      return;
-    }
+    document.getElementById('photoPreview').innerHTML = `<div style="font-size:12px;color:#8a8471;margin-bottom:8px;">Photo tayar ki ja rahi hai...</div>`;
+
     const reader = new FileReader();
     reader.onload = function(ev){
-      state.photoBase64 = ev.target.result;
-      document.getElementById('photoPreview').innerHTML = `<img src="${ev.target.result}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;margin-bottom:10px;border:1px solid var(--line);">`;
+      const img = new Image();
+      img.onload = function(){
+        // Resize so the longest side is at most 700px, then re-encode as JPEG at 70% quality.
+        // A phone camera photo (often 3-8MB) becomes roughly 50-150KB this way — plenty
+        // clear enough for a staff member to recognize a face, tiny enough to store easily.
+        const MAX_DIM = 700;
+        let w = img.width, h = img.height;
+        if(w > h && w > MAX_DIM){ h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
+        else if(h > MAX_DIM){ w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL('image/jpeg', 0.7);
+
+        state.photoBase64 = compressed;
+        document.getElementById('photoPreview').innerHTML = `<img src="${compressed}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;margin-bottom:10px;border:1px solid var(--line);">`;
+      };
+      img.onerror = function(){
+        document.getElementById('photoPreview').innerHTML = `<div class="err">Photo load nahi ho saki, dobara try karein.</div>`;
+      };
+      img.src = ev.target.result;
+    };
+    reader.onerror = function(){
+      document.getElementById('photoPreview').innerHTML = `<div class="err">Photo read nahi ho saki, dobara try karein.</div>`;
     };
     reader.readAsDataURL(file);
   };
