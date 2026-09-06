@@ -8,15 +8,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#1E2A22;
-    --paper:#F1EEE6;
-    --paper-2:#E7E2D6;
-    --brass:#B8893C;
-    --brass-dark:#8F6A2C;
-    --green:#24402F;
-    --green-deep:#16261C;
-    --line:#D8D1C0;
-    --error:#8C3B32;
+    --ink:#F1EEE6;
+    --paper:#12171C;
+    --paper-2:#232B33;
+    --brass:#D4AF6A;
+    --brass-dark:#C9A54D;
+    --green:#3FA79A;
+    --green-deep:#1B2229;
+    --line:#2B343C;
+    --error:#E0665C;
     --radius:4px;
   }
   *{box-sizing:border-box;}
@@ -36,25 +36,34 @@
 
   /* Signature: barber-stripe header */
   .stripe-header{
-    height:8px;
+    height:5px;
     width:100%;
-    background:repeating-linear-gradient(
-      -45deg,
-      var(--green) 0px, var(--green) 14px,
-      var(--brass) 14px, var(--brass) 20px,
-      var(--paper-2) 20px, var(--paper-2) 34px
+    background:linear-gradient(90deg,
+      var(--brass-dark) 0%, var(--brass) 25%, #F5DFA8 50%, var(--brass) 75%, var(--brass-dark) 100%
     );
   }
 
   .topbar{
-    background:var(--green-deep);
+    background:radial-gradient(ellipse at top, #223028 0%, var(--green-deep) 55%, #0D1410 100%);
     color:var(--paper);
-    padding:22px 20px 26px;
+    padding:28px 20px 30px;
     text-align:center;
+    position:relative;
+    box-shadow:0 6px 20px rgba(0,0,0,0.35);
+  }
+  .topbar .badge{
+    width:44px; height:44px;
+    margin:0 auto 10px;
+    border-radius:50%;
+    background:linear-gradient(145deg, var(--brass) 0%, var(--brass-dark) 100%);
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px;
+    box-shadow:0 4px 12px rgba(212,175,106,0.35), inset 0 1px 1px rgba(255,255,255,0.3);
   }
   .topbar .salon-name{
     font-size:26px;
     color:#fff;
+    text-shadow:0 2px 8px rgba(0,0,0,0.4);
   }
   .topbar .tagline{
     font-size:12px;
@@ -62,6 +71,13 @@
     text-transform:uppercase;
     color:var(--brass);
     margin-top:6px;
+  }
+  .topbar .tagline::before, .topbar .tagline::after{
+    content:'✦';
+    color:var(--brass-dark);
+    margin:0 8px;
+    font-size:9px;
+    vertical-align:middle;
   }
 
   .wrap{
@@ -104,7 +120,7 @@
   }
 
   .card{
-    background:#fff;
+    background:var(--paper-2);
     border:1px solid var(--line);
     border-radius:var(--radius);
     padding:14px 16px;
@@ -120,10 +136,10 @@
   .card.selected{
     border-color:var(--green);
     box-shadow:inset 0 0 0 1px var(--green);
-    background:#F7F5EE;
+    background:rgba(63,167,154,0.10);
   }
   .card-title{ font-weight:600; font-size:15px; }
-  .card-sub{ font-size:12px; color:#6b6558; margin-top:2px; }
+  .card-sub{ font-size:12px; color:#9AA5AC; margin-top:2px; }
   .card-meta{ font-size:12px; color:var(--brass-dark); font-weight:600; white-space:nowrap; }
 
   .btn{
@@ -141,7 +157,7 @@
     letter-spacing:0.02em;
     margin-top:8px;
   }
-  .btn:disabled{ background:#b8b3a4; cursor:not-allowed; }
+  .btn:disabled{ background:#3a4048; cursor:not-allowed; }
   .btn.secondary{
     background:transparent;
     color:var(--green);
@@ -158,10 +174,11 @@
     font-family:'Work Sans',sans-serif;
     font-size:16px;
     margin-bottom:12px;
-    background:#fff;
+    background:var(--paper-2);
+    color:var(--ink);
   }
   input:focus{ outline:2px solid var(--brass); outline-offset:1px; }
-  label{ font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:#6b6558; font-weight:600; display:block; margin-bottom:5px;}
+  label{ font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:#9AA5AC; font-weight:600; display:block; margin-bottom:5px;}
 
   .date-scroll{
     display:flex;
@@ -177,13 +194,13 @@
     padding:10px 4px;
     border:1px solid var(--line);
     border-radius:var(--radius);
-    background:#fff;
+    background:var(--paper-2);
     cursor:pointer;
   }
-  .date-pill .dow{ font-size:10px; text-transform:uppercase; color:#8a8471; letter-spacing:.05em;}
+  .date-pill .dow{ font-size:10px; text-transform:uppercase; color:#9AA5AC; letter-spacing:.05em;}
   .date-pill .dnum{ font-family:'Fraunces',serif; font-size:19px; font-weight:600; margin-top:2px;}
   .date-pill.selected{ border-color:var(--green); background:var(--green); }
-  .date-pill.selected .dow{ color:#cfe0d3; }
+  .date-pill.selected .dow{ color:#EAF7F5; }
   .date-pill.selected .dnum{ color:#fff; }
 
   .slot-grid{
@@ -197,18 +214,18 @@
     text-align:center;
     border:1px solid var(--line);
     border-radius:var(--radius);
-    background:#fff;
+    background:var(--paper-2);
     font-size:14px;
     font-weight:600;
     cursor:pointer;
   }
-  .slot.selected{ background:var(--brass); border-color:var(--brass); color:#fff; }
-  .slot.who{ font-size:10px; font-weight:400; display:block; color:#8a8471; margin-top:2px;}
-  .slot.selected .who{ color:#fff3de; }
+  .slot.selected{ background:var(--brass); border-color:var(--brass); color:#1B1200; }
+  .slot.who{ font-size:10px; font-weight:400; display:block; color:#9AA5AC; margin-top:2px;}
+  .slot.selected .who{ color:#4a3414; }
 
   .empty-msg{
     text-align:center;
-    color:#8a8471;
+    color:#9AA5AC;
     font-size:14px;
     padding:30px 10px;
   }
@@ -228,7 +245,7 @@
     border-bottom:1px solid rgba(255,255,255,0.12);
   }
   .summary-row:last-child{ border-bottom:none; }
-  .summary-row .k{ color:#b9c6bd; }
+  .summary-row .k{ color:#9AA5AC; }
   .summary-row .v{ font-weight:600; }
 
   .confirm-hero{
@@ -250,7 +267,7 @@
     width:100%;
     padding:14px;
     border-radius:var(--radius);
-    background:#1F7A4D;
+    background:#1F9B52;
     color:#fff;
     text-align:center;
     text-decoration:none;
@@ -259,16 +276,16 @@
   }
 
   .err{
-    background:#FBEAE7;
+    background:rgba(224,102,92,0.12);
     color:var(--error);
-    border:1px solid #E3B3AB;
+    border:1px solid rgba(224,102,92,0.4);
     border-radius:var(--radius);
     padding:10px 12px;
     font-size:13px;
     margin-bottom:12px;
   }
 
-  .loading{ text-align:center; padding:40px 0; color:#8a8471; font-size:14px; }
+  .loading{ text-align:center; padding:40px 0; color:#9AA5AC; font-size:14px; }
 
   /* Persistent cart bar */
   #cartBar{
@@ -301,6 +318,7 @@
 
 <div class="stripe-header"></div>
 <div class="topbar">
+  <div class="badge">✂️</div>
   <div class="salon-name" id="salonName">Loading...</div>
   <div class="tagline">Book your slot</div>
 </div>
@@ -308,7 +326,7 @@
 <div class="wrap" id="app" style="padding-bottom:90px;">
   <div class="progress" id="progress"></div>
   <div id="stepArea"><div class="loading"><div class="spinner"></div>Connecting...</div></div>
-  <div id="termsNote" style="font-size:11px; color:#8a8471; text-align:center; margin-top:24px; padding:0 10px; line-height:1.6;">
+  <div id="termsNote" style="font-size:11px; color:#9AA5AC; text-align:center; margin-top:24px; padding:0 10px; line-height:1.6;">
     Yeh online booking system aapki (customer ki) suhulat ke liye banaya gaya hai, taake baar baar call kiye bagair slot book ho sake.<br>
     <strong>Policy:</strong> Booked time par 15 minute tak intezar kiya jayega. Uske baad slot khud khaali ho jayega aur kisi aur customer ko diya ja sakta hai.
   </div>
@@ -453,7 +471,7 @@ function renderStep1(){
   let html = stepHeader('What would you like done?');
 
   if(INIT.deals && INIT.deals.length){
-    html += `<div style="font-size:12px;color:#8a8471;margin-bottom:8px;font-weight:600;">📦 Packages</div>`;
+    html += `<div style="font-size:12px;color:#9AA5AC;margin-bottom:8px;font-weight:600;">📦 Packages</div>`;
     INIT.deals.forEach(d=>{
       const isSelected = state.dealId === d.id;
       const savings = d.actualPrice - parsePriceNum(d.price);
@@ -463,15 +481,15 @@ function renderStep1(){
           <div class="card-sub">${d.serviceNames.join(' + ')} · ${d.duration} min</div>
         </div>
         <div class="card-meta">
-          ${savings > 0 ? `<div style="text-decoration:line-through;color:#8a8471;font-size:11px;">Rs. ${d.actualPrice}</div>` : ''}
+          ${savings > 0 ? `<div style="text-decoration:line-through;color:#9AA5AC;font-size:11px;">Rs. ${d.actualPrice}</div>` : ''}
           <div>Rs. ${d.price}</div>
           ${savings > 0 ? `<div style="color:var(--green);font-size:11px;font-weight:700;">Save Rs. ${savings}</div>` : ''}
         </div>
       </div>`;
     });
-    html += `<div style="font-size:12px;color:#8a8471;margin:16px 0 8px;font-weight:600;">Ya alag alag services select karein</div>`;
+    html += `<div style="font-size:12px;color:#9AA5AC;margin:16px 0 8px;font-weight:600;">Ya alag alag services select karein</div>`;
   } else {
-    html += `<div style="font-size:12px;color:#8a8471;margin-bottom:12px;">Ek ya zyada services select karein. Price professional ke hisaab se alag ho sakti hai.</div>`;
+    html += `<div style="font-size:12px;color:#9AA5AC;margin-bottom:12px;">Ek ya zyada services select karein. Price professional ke hisaab se alag ho sakti hai.</div>`;
   }
 
   INIT.services.forEach(s=>{
@@ -512,7 +530,7 @@ function updateServiceSummary(){
   const totalMin = selected.reduce((sum,s)=>sum+s.duration,0);
   if(btn) btn.disabled = false;
   if(summaryEl){
-    summaryEl.innerHTML = `<div style="background:#F7F5EE;border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-top:6px;font-size:13px;">
+    summaryEl.innerHTML = `<div style="background:rgba(63,167,154,0.10);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-top:6px;font-size:13px;">
       <strong>${selected.length} service${selected.length>1?'s':''} selected</strong> — total ${totalMin} min
     </div>`;
   }
@@ -522,9 +540,9 @@ function updateServiceSummary(){
 function renderStep2(){
   state.step = 2; renderProgress();
   let html = stepHeader('Choose your professional');
-  html += `<div style="font-size:12px;color:#8a8471;margin-bottom:12px;">Final price agle step mein confirm hogi</div>`;
+  html += `<div style="font-size:12px;color:#9AA5AC;margin-bottom:12px;">Final price agle step mein confirm hogi</div>`;
   INIT.staff.forEach(s=>{
-    const stars = s.avgRating ? starHtml(s.avgRating) + ` <span style="color:#8a8471;font-size:12px;">(${s.ratingCount})</span>` : `<span style="color:#8a8471;font-size:12px;">No ratings yet</span>`;
+    const stars = s.avgRating ? starHtml(s.avgRating) + ` <span style="color:#9AA5AC;font-size:12px;">(${s.ratingCount})</span>` : `<span style="color:#9AA5AC;font-size:12px;">No ratings yet</span>`;
     html += `<div class="card" data-id="${s.id}" onclick="selectStaff('${s.id}','${s.name.replace(/'/g,"\\'")}')">
       <div><div class="card-title">${s.name}</div><div class="card-sub">${stars}</div></div></div>`;
   });
@@ -538,7 +556,7 @@ function starHtml(avg){
   const full = Math.round(avg);
   let s = '';
   for(let i=1;i<=5;i++){ s += i <= full ? '★' : '☆'; }
-  return `<span style="color:var(--brass);letter-spacing:1px;">${s}</span> <span style="color:#6b6558;">${avg}</span>`;
+  return `<span style="color:var(--brass);letter-spacing:1px;">${s}</span> <span style="color:#9AA5AC;">${avg}</span>`;
 }
 function selectStaff(id,name){
   state.staffId = id; state.staffName = name;
@@ -656,7 +674,7 @@ function renderStep5(){
   const handlePhoto = function(e){
     const file = e.target.files[0];
     if(!file) { return; }
-    document.getElementById('photoPreview').innerHTML = `<div style="font-size:12px;color:#8a8471;margin-bottom:8px;">Photo tayar ki ja rahi hai...</div>`;
+    document.getElementById('photoPreview').innerHTML = `<div style="font-size:12px;color:#9AA5AC;margin-bottom:8px;">Photo tayar ki ja rahi hai...</div>`;
 
     const reader = new FileReader();
     reader.onload = function(ev){
@@ -702,7 +720,7 @@ function priceSummaryHtml(){
     const savings = actual - dealPrice;
     return `<div class="summary-box">
       <div class="summary-row"><span class="k">📦 ${deal.name}</span><span class="v">${deal.serviceNames.join(', ')}</span></div>
-      ${savings > 0 ? `<div class="summary-row"><span class="k">Actual price</span><span class="v" style="text-decoration:line-through;color:#8a8471;">Rs. ${actual}</span></div>` : ''}
+      ${savings > 0 ? `<div class="summary-row"><span class="k">Actual price</span><span class="v" style="text-decoration:line-through;color:#9AA5AC;">Rs. ${actual}</span></div>` : ''}
       <div class="summary-row"><span class="k">Total</span><span class="v">Rs. ${dealPrice}</span></div>
       ${savings > 0 ? `<div class="summary-row"><span class="k" style="color:var(--green);font-weight:700;">You save</span><span class="v" style="color:var(--green);font-weight:700;">Rs. ${savings}</span></div>` : ''}
     </div>`;
@@ -777,7 +795,7 @@ function renderStep6(res){
     <a class="whatsapp-btn" href="${waLink}" target="_blank">Send Confirmation to Salon (WhatsApp)</a>
     <div class="btn-row"><button class="btn secondary" onclick="location.reload()">Book Another Slot</button></div>
     <div style="text-align:center;margin-top:14px;">
-      <a href="${CANCEL_PAGE_URL}?id=${res.bookingId}" style="font-size:12px;color:#8a8471;text-decoration:underline;" target="_blank">Cancel this booking</a>
+      <a href="${CANCEL_PAGE_URL}?id=${res.bookingId}" style="font-size:12px;color:#9AA5AC;text-decoration:underline;" target="_blank">Cancel this booking</a>
     </div>
   `;
   document.getElementById('stepArea').innerHTML = html;
