@@ -37,6 +37,19 @@
 
   input[type=date]{ padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius); font-size:16px; background:var(--paper-2); color:var(--ink); width:100%; margin-bottom:16px;}
 
+  .earnings-card{
+    background:linear-gradient(160deg, var(--green-deep) 0%, #0D1410 100%);
+    border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px; margin-bottom:16px;
+  }
+  .earnings-row{ display:flex; gap:10px; }
+  .earnings-item{ flex:1; text-align:center; }
+  .e-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--brass); margin-bottom:4px; }
+  .e-value{ font-family:'Fraunces',serif; font-size:18px; font-weight:600; color:#fff; }
+  .e-value.gold{ color:var(--brass); }
+  .e-sub{ font-size:10px; color:#9AA5AC; margin-top:2px; }
+  .earnings-divider{ height:1px; background:var(--line); margin:14px 0; }
+
   .card{
     background:var(--paper-2); border:1px solid var(--line); border-radius:var(--radius);
     padding:14px; margin-bottom:12px;
@@ -78,6 +91,7 @@
   <div class="sub">My Queue</div>
 </div>
 <div class="wrap">
+  <div id="earningsBox"></div>
   <input type="date" id="dateFilter">
   <div id="list"><div class="loading">Loading...</div></div>
 </div>
@@ -130,6 +144,27 @@ async function boot(){
   document.getElementById('staffName').textContent = me ? me.name : 'My Queue';
   document.getElementById('dateFilter').addEventListener('change', load);
   load();
+  loadEarnings();
+}
+
+async function loadEarnings(){
+  const res = await apiGet('/staff-stats', { staffId: STAFF_ID });
+  if(res.error){ document.getElementById('earningsBox').innerHTML = ''; return; }
+  document.getElementById('earningsBox').innerHTML = `
+    <div class="earnings-card">
+      <div class="earnings-row">
+        <div class="earnings-item"><div class="e-label">Aaj</div><div class="e-value">Rs. ${res.today.total}</div><div class="e-sub">${res.today.count} service</div></div>
+        <div class="earnings-item"><div class="e-label">Is Hafte</div><div class="e-value">Rs. ${res.week.total}</div><div class="e-sub">${res.week.count} service</div></div>
+        <div class="earnings-item"><div class="e-label">Is Mahine</div><div class="e-value">Rs. ${res.month.total}</div><div class="e-sub">${res.month.count} service</div></div>
+      </div>
+      ${(res.commissionAmount!=null || res.fixedSalary!=null) ? `
+      <div class="earnings-divider"></div>
+      <div class="earnings-row">
+        ${res.commissionAmount!=null ? `<div class="earnings-item"><div class="e-label">Commission (${res.commissionPercent}%)</div><div class="e-value gold">Rs. ${res.commissionAmount}</div></div>` : ''}
+        ${res.fixedSalary!=null ? `<div class="earnings-item"><div class="e-label">Fixed Salary</div><div class="e-value gold">Rs. ${res.fixedSalary}</div></div>` : ''}
+      </div>` : ''}
+    </div>
+  `;
 }
 
 async function load(){
@@ -229,6 +264,7 @@ async function submitAddService(){
 setInterval(() => {
   if (document.visibilityState === 'visible') {
     load();
+    loadEarnings();
   }
 }, 30000);
 
