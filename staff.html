@@ -24,6 +24,7 @@
     background:radial-gradient(ellipse at top, #223028 0%, var(--green-deep) 55%, #0D1410 100%);
     color:#fff; padding:26px 20px 28px; text-align:center;
     box-shadow:0 6px 20px rgba(0,0,0,0.35);
+    position:relative;
   }
   .topbar .badge{
     width:40px; height:40px; margin:0 auto 8px; border-radius:50%;
@@ -33,6 +34,31 @@
   }
   .topbar h1{ font-size:22px; text-shadow:0 2px 8px rgba(0,0,0,0.4); }
   .topbar .sub{ font-size:12px; color:var(--brass); text-transform:uppercase; letter-spacing:0.1em; margin-top:4px;}
+
+  .bell-wrap{ position:absolute; top:16px; right:16px; }
+  .bell-btn{ background:none; border:none; font-size:20px; cursor:pointer; position:relative; padding:4px 6px; color:#fff; }
+  .bell-badge{
+    position:absolute; top:-2px; right:-2px; background:var(--error); color:#fff;
+    font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center; padding:0 3px;
+  }
+  .notif-panel{
+    display:none; position:absolute; top:36px; right:0; z-index:150;
+    width:280px; max-height:340px; overflow-y:auto; text-align:left;
+    background:var(--paper-2); border:1px solid var(--line); border-radius:8px;
+    box-shadow:0 12px 28px rgba(0,0,0,0.5);
+  }
+  .notif-panel.show{ display:block; }
+  .notif-panel-header{
+    padding:10px 14px; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;
+    color:#9AA5AC; border-bottom:1px solid var(--line); font-weight:700;
+  }
+  .notif-item{ padding:10px 14px; border-bottom:1px solid var(--line); font-size:12px; color:var(--ink); }
+  .notif-item:last-child{ border-bottom:none; }
+  .notif-item .notif-time{ font-size:10px; color:#9AA5AC; margin-top:3px; }
+  .notif-item.notif-cancel{ border-left:3px solid var(--error); }
+  .notif-item.notif-new{ border-left:3px solid var(--ok, #5FBF8F); }
+  .notif-empty{ padding:20px 14px; text-align:center; color:#9AA5AC; font-size:12px; }
   .wrap{ max-width:600px; margin:0 auto; padding:16px; }
 
   input[type=date]{ padding:10px 12px; border:1px solid var(--line); border-radius:var(--radius); font-size:16px; background:var(--paper-2); color:var(--ink); width:100%; margin-bottom:16px;}
@@ -81,14 +107,31 @@
   .modal{ background:var(--paper-2); color:var(--ink); border-radius:var(--radius); padding:20px; width:100%; max-width:380px; }
   .modal-actions{ display:flex; gap:10px; margin-top:16px; }
   .err{ background:rgba(224,102,92,0.12); color:var(--error); border:1px solid rgba(224,102,92,0.4); border-radius:var(--radius); padding:8px 10px; font-size:13px; margin-top:8px;}
+  .toast{
+    width:100%; padding:12px 16px; border-radius:8px; font-size:13px; font-weight:600;
+    color:#fff; box-shadow:0 8px 24px rgba(0,0,0,0.4); animation:toast-in 0.3s ease;
+  }
+  .toast-new{ background:linear-gradient(135deg, #24402F, #1F9B52); border:1px solid #5FBF8F; }
+  .toast-cancel{ background:linear-gradient(135deg, #4a1f1c, var(--error)); border:1px solid var(--error); }
+  .toast-out{ animation:toast-out 0.4s ease forwards; }
+  @keyframes toast-in{ from{ opacity:0; transform:translateY(-16px); } to{ opacity:1; transform:translateY(0); } }
+  @keyframes toast-out{ to{ opacity:0; transform:translateY(-16px); } }
 </style>
 </head>
 <body>
 <div class="stripe-header"></div>
+<div id="toastContainer" style="position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:200; display:flex; flex-direction:column; gap:8px; align-items:center; width:90%; max-width:420px;"></div>
 <div class="topbar">
   <div class="badge">✂️</div>
   <h1 id="staffName">Loading...</h1>
   <div class="sub">My Queue</div>
+  <div class="bell-wrap">
+    <button class="bell-btn" onclick="toggleNotificationPanel()">🔔<span class="bell-badge" id="bellBadge" style="display:none;">0</span></button>
+    <div class="notif-panel" id="notifPanel">
+      <div class="notif-panel-header">Notifications</div>
+      <div id="notifList"><div class="notif-empty">Koi notification nahi hai.</div></div>
+    </div>
+  </div>
 </div>
 <div class="wrap">
   <div id="earningsBox"></div>
@@ -143,6 +186,7 @@ async function boot(){
   const me = INIT.staff.find(s=>s.id === STAFF_ID);
   document.getElementById('staffName').textContent = me ? me.name : 'My Queue';
   document.getElementById('dateFilter').addEventListener('change', load);
+  renderNotificationBell();
   load();
   loadEarnings();
 }
@@ -167,10 +211,11 @@ async function loadEarnings(){
   `;
 }
 
-async function load(){
+async function load(silent){
   const date = document.getElementById('dateFilter').value;
-  document.getElementById('list').innerHTML = `<div class="loading">Loading...</div>`;
+  if(!silent) document.getElementById('list').innerHTML = `<div class="loading">Loading...</div>`;
   const res = await apiGet('/bookings', { date, staffId: STAFF_ID });
+  detectStaffBookingChanges(date, res.bookings || []);
   if(!res.bookings || !res.bookings.length){
     document.getElementById('list').innerHTML = `<div class="empty">Is din koi booking nahi hai.</div>`;
     return;
@@ -201,6 +246,110 @@ async function load(){
 }
 
 function esc(s){ return String(s).replace(/'/g,"\\'"); }
+
+/* ---------- NOTIFICATIONS (persistent bell, per-staff) ---------- */
+let prevStaffBookingsMap = null;
+let prevStaffBookingsDate = null;
+const NOTIF_KEY = 'staffNotifications_' + STAFF_ID;
+
+function detectStaffBookingChanges(date, bookings){
+  if(prevStaffBookingsDate !== date){
+    prevStaffBookingsDate = date;
+    prevStaffBookingsMap = {};
+    bookings.forEach(b => prevStaffBookingsMap[b.bookingId] = b.status);
+    return;
+  }
+  const newMap = {};
+  bookings.forEach(b => newMap[b.bookingId] = b.status);
+  bookings.forEach(b => {
+    const wasSeen = b.bookingId in prevStaffBookingsMap;
+    if(!wasSeen && b.status === 'Confirmed'){
+      pushNotification(`🆕 Nayi booking: ${b.startTime} — ${b.customerName} (${b.serviceName})`, 'new');
+    } else if(wasSeen && prevStaffBookingsMap[b.bookingId] !== 'Cancelled' && b.status === 'Cancelled'){
+      pushNotification(`❌ Cancel hui: ${b.startTime} — ${b.customerName}`, 'cancel');
+    }
+  });
+  prevStaffBookingsMap = newMap;
+}
+
+function pushNotification(message, type){
+  showToast(message, type);
+  const list = JSON.parse(localStorage.getItem(NOTIF_KEY) || '[]');
+  list.unshift({ message, type, time: new Date().toISOString(), read: false });
+  localStorage.setItem(NOTIF_KEY, JSON.stringify(list.slice(0, 30)));
+  renderNotificationBell();
+}
+
+function renderNotificationBell(){
+  const list = JSON.parse(localStorage.getItem(NOTIF_KEY) || '[]');
+  const unread = list.filter(n => !n.read).length;
+  const badge = document.getElementById('bellBadge');
+  badge.style.display = unread > 0 ? 'flex' : 'none';
+  badge.textContent = unread > 9 ? '9+' : unread;
+
+  const listEl = document.getElementById('notifList');
+  if(list.length === 0){
+    listEl.innerHTML = `<div class="notif-empty">Koi notification nahi hai.</div>`;
+    return;
+  }
+  listEl.innerHTML = list.map(n => `
+    <div class="notif-item ${n.type === 'cancel' ? 'notif-cancel' : 'notif-new'}">
+      ${n.message}
+      <div class="notif-time">${timeAgo(n.time)}</div>
+    </div>
+  `).join('');
+}
+
+function timeAgo(iso){
+  const diffSec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if(diffSec < 60) return 'Abhi';
+  if(diffSec < 3600) return Math.floor(diffSec/60) + ' minute pehle';
+  if(diffSec < 86400) return Math.floor(diffSec/3600) + ' ghante pehle';
+  return Math.floor(diffSec/86400) + ' din pehle';
+}
+
+function toggleNotificationPanel(){
+  const panel = document.getElementById('notifPanel');
+  panel.classList.toggle('show');
+  if(panel.classList.contains('show')){
+    const list = JSON.parse(localStorage.getItem(NOTIF_KEY) || '[]');
+    list.forEach(n => n.read = true);
+    localStorage.setItem(NOTIF_KEY, JSON.stringify(list));
+    renderNotificationBell();
+  }
+}
+document.addEventListener('click', function(e){
+  const wrap = document.querySelector('.bell-wrap');
+  if(wrap && !wrap.contains(e.target)){
+    document.getElementById('notifPanel').classList.remove('show');
+  }
+});
+
+function showToast(message, type){
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + (type === 'cancel' ? 'toast-cancel' : 'toast-new');
+  toast.textContent = message;
+  container.appendChild(toast);
+  playBeep();
+  setTimeout(() => {
+    toast.classList.add('toast-out');
+    setTimeout(() => toast.remove(), 400);
+  }, 6000);
+}
+function playBeep(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+  }catch(e){ /* audio blocked, silently ignore */ }
+}
+
 function waNumber(phone){
   let digits = String(phone||'').replace(/[^0-9]/g,'');
   if(digits.startsWith('0')) digits = '92' + digits.slice(1);
@@ -263,7 +412,7 @@ async function submitAddService(){
 
 setInterval(() => {
   if (document.visibilityState === 'visible') {
-    load();
+    load(true);
     loadEarnings();
   }
 }, 30000);
