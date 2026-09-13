@@ -775,10 +775,24 @@ async function submitBooking(){
 }
 
 /* ---------- STEP 6: CONFIRMATION ---------- */
+function waNumber(phone){
+  let digits = String(phone||'').replace(/[^0-9]/g,'');
+  if(digits.startsWith('0')) digits = '92' + digits.slice(1);
+  return digits;
+}
+
 function renderStep6(res){
   state.step = 6; renderProgress();
   const msg = `Booking Confirmed ✅\n${res.salonName}\nService: ${res.serviceName}\nWith: ${res.staffName}\nDate: ${res.date}\nTime: ${formatTime(res.time)} - ${formatTime(res.endTime)}\nName: ${state.name}\nBooking ID: ${res.bookingId}\n\nCancel karna ho to: ${CANCEL_PAGE_URL}?id=${res.bookingId}`;
   const waLink = 'https://wa.me/' + SALON_WHATSAPP + '?text=' + encodeURIComponent(msg);
+
+  const staffMember = (INIT.staff||[]).find(s=>s.id===res.staffId);
+  let staffNotifyBtn = '';
+  if(staffMember && staffMember.phone){
+    const staffMsg = `Naya booking! ${state.name}\nService: ${res.serviceName}\nDate: ${res.date}\nTime: ${formatTime(res.time)} - ${formatTime(res.endTime)}\nBooking ID: ${res.bookingId} — ${res.salonName}`;
+    const staffWaLink = 'https://wa.me/' + waNumber(staffMember.phone) + '?text=' + encodeURIComponent(staffMsg);
+    staffNotifyBtn = `<a class="whatsapp-btn" href="${staffWaLink}" target="_blank" style="background:var(--green);margin-top:8px;">Also Notify ${res.staffName} (WhatsApp)</a>`;
+  }
 
   let html = `
     <div class="confirm-hero">
@@ -793,6 +807,7 @@ function renderStep6(res){
       <div class="summary-row"><span class="k">Booking ID</span><span class="v">${res.bookingId}</span></div>
     </div>
     <a class="whatsapp-btn" href="${waLink}" target="_blank">Send Confirmation to Salon (WhatsApp)</a>
+    ${staffNotifyBtn}
     <div class="btn-row"><button class="btn secondary" onclick="location.reload()">Book Another Slot</button></div>
     <div style="text-align:center;margin-top:14px;">
       <a href="${CANCEL_PAGE_URL}?id=${res.bookingId}" style="font-size:12px;color:#9AA5AC;text-decoration:underline;" target="_blank">Cancel this booking</a>

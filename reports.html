@@ -128,12 +128,14 @@ function renderSalesData(res){
     return;
   }
   const grandTotal = res.staff.reduce((s,x)=>s+x.total,0);
+  const grandCommission = res.staff.reduce((s,x)=>s+(x.commissionAmount||0),0);
   let html = `<div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">${res.startDate} se ${res.endDate} tak</div>`;
-  html += `<table><thead><tr><th>Staff</th><th>Services Completed</th><th>Total Sales</th></tr></thead><tbody>`;
+  html += `<table><thead><tr><th>Staff</th><th>Services Completed</th><th>Total Sales</th><th>Commission</th></tr></thead><tbody>`;
   res.staff.forEach(s=>{
-    html += `<tr><td>${s.staffName}</td><td>${s.count}</td><td>Rs. ${s.total}</td></tr>`;
+    const commissionCell = s.commissionAmount != null ? `Rs. ${s.commissionAmount} (${s.commissionPercent}%)` : '—';
+    html += `<tr><td>${s.staffName}</td><td>${s.count}</td><td>Rs. ${s.total}</td><td>${commissionCell}</td></tr>`;
   });
-  html += `<tr style="font-weight:700;"><td>Total</td><td>${res.staff.reduce((s,x)=>s+x.count,0)}</td><td>Rs. ${grandTotal}</td></tr>`;
+  html += `<tr style="font-weight:700;"><td>Total</td><td>${res.staff.reduce((s,x)=>s+x.count,0)}</td><td>Rs. ${grandTotal}</td><td>Rs. ${grandCommission}</td></tr>`;
   html += `</tbody></table>`;
   document.getElementById('salesArea').innerHTML = html;
 }
