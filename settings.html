@@ -147,12 +147,15 @@ function salonInfoSection(){
     </div>
     <label>Off Days (0=Sun...6=Sat, comma separated, blank = none)</label>
     <input type="text" id="cfg_OffDays" value="${c.OffDays||''}" style="width:100%;">
+    <label>No-Show Grace Period (minutes)</label>
+    <input type="number" id="cfg_NoShowGraceMinutes" value="${c.NoShowGraceMinutes||15}" min="0" style="width:120px;">
+    <div style="font-size:12px;color:#6b6558;margin-top:4px;">Booking ke time ke baad customer ke aane ka intezar kitni der karein, uske baad slot khud khaali ho jaye.</div>
     <button class="btn" style="margin-top:12px;" onclick="saveSalonInfo()">Save Salon Info</button>
     <div class="save-msg" id="msg_salon">Saved ✓</div>
   </div>`;
 }
 async function saveSalonInfo(){
-  const keys = ['SalonName','OpeningTime','ClosingTime','SlotInterval','OffDays'];
+  const keys = ['SalonName','OpeningTime','ClosingTime','SlotInterval','OffDays','NoShowGraceMinutes'];
   for(const k of keys){
     await apiPost('/admin/config', { key:k, value: document.getElementById('cfg_'+k).value });
   }

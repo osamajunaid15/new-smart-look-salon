@@ -57,6 +57,7 @@
   .notif-item:last-child{ border-bottom:none; }
   .notif-item .notif-time{ font-size:10px; color:#9AA5AC; margin-top:3px; }
   .notif-item.notif-cancel{ border-left:3px solid var(--error); }
+  .notif-item.notif-overdue{ border-left:3px solid var(--brass); }
   .notif-item.notif-new{ border-left:3px solid var(--ok, #5FBF8F); }
   .notif-empty{ padding:20px 14px; text-align:center; color:#9AA5AC; font-size:12px; }
   .wrap{ max-width:600px; margin:0 auto; padding:16px; }
@@ -113,6 +114,7 @@
   }
   .toast-new{ background:linear-gradient(135deg, #24402F, #1F9B52); border:1px solid #5FBF8F; }
   .toast-cancel{ background:linear-gradient(135deg, #4a1f1c, var(--error)); border:1px solid var(--error); }
+  .toast-overdue{ background:linear-gradient(135deg, #4a3414, var(--brass)); border:1px solid var(--brass); color:#1B1200; }
   .toast-out{ animation:toast-out 0.4s ease forwards; }
   @keyframes toast-in{ from{ opacity:0; transform:translateY(-16px); } to{ opacity:1; transform:translateY(0); } }
   @keyframes toast-out{ to{ opacity:0; transform:translateY(-16px); } }
@@ -216,6 +218,7 @@ async function load(silent){
   if(!silent) document.getElementById('list').innerHTML = `<div class="loading">Loading...</div>`;
   const res = await apiGet('/bookings', { date, staffId: STAFF_ID });
   detectStaffBookingChanges(date, res.bookings || []);
+  checkOverdueBookings(date, res.bookings || []);
   if(!res.bookings || !res.bookings.length){
     document.getElementById('list').innerHTML = `<div class="empty">Is din koi booking nahi hai.</div>`;
     return;
@@ -272,12 +275,38 @@ function detectStaffBookingChanges(date, bookings){
   prevStaffBookingsMap = newMap;
 }
 
-function pushNotification(message, type){
-  showToast(message, type);
+function pushNotification(message, type, onTap){
+  showToast(message, type, onTap);
   const list = JSON.parse(localStorage.getItem(NOTIF_KEY) || '[]');
   list.unshift({ message, type, time: new Date().toISOString(), read: false });
   localStorage.setItem(NOTIF_KEY, JSON.stringify(list.slice(0, 30)));
   renderNotificationBell();
+}
+
+/* ---------- OVERDUE (NOT ARRIVED) CHECK ---------- */
+function checkOverdueBookings(date, bookings){
+  if(date !== todayStr()) return;
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const alertedKey = 'overdueAlerted_' + STAFF_ID + '_' + date;
+  const alerted = JSON.parse(localStorage.getItem(alertedKey) || '[]');
+
+  bookings.forEach(b => {
+    if(b.status !== 'Confirmed') return;
+    if(alerted.includes(b.bookingId)) return;
+    const [h, m] = b.startTime.split(':').map(Number);
+    const startMin = h * 60 + m;
+    if(nowMinutes >= startMin){
+      const checkMsg = `Salaam ${b.customerName}! Aapki ${b.startTime} ki booking ka waqt ho gaya hai. Kya aap aa rahe hain?`;
+      pushNotification(
+        `⏰ ${b.customerName} abhi tak nahi aaye — ${b.startTime}`,
+        'overdue',
+        () => window.open('https://wa.me/' + waNumber(b.phone) + '?text=' + encodeURIComponent(checkMsg), '_blank')
+      );
+      alerted.push(b.bookingId);
+    }
+  });
+  localStorage.setItem(alertedKey, JSON.stringify(alerted));
 }
 
 function renderNotificationBell(){
@@ -293,7 +322,7 @@ function renderNotificationBell(){
     return;
   }
   listEl.innerHTML = list.map(n => `
-    <div class="notif-item ${n.type === 'cancel' ? 'notif-cancel' : 'notif-new'}">
+    <div class="notif-item ${n.type === 'cancel' ? 'notif-cancel' : n.type === 'overdue' ? 'notif-overdue' : 'notif-new'}">
       ${n.message}
       <div class="notif-time">${timeAgo(n.time)}</div>
     </div>
@@ -325,17 +354,19 @@ document.addEventListener('click', function(e){
   }
 });
 
-function showToast(message, type){
+function showToast(message, type, onTap){
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
-  toast.className = 'toast ' + (type === 'cancel' ? 'toast-cancel' : 'toast-new');
-  toast.textContent = message;
+  toast.className = 'toast ' + (type === 'cancel' ? 'toast-cancel' : type === 'overdue' ? 'toast-overdue' : 'toast-new');
+  toast.textContent = message + (onTap ? ' — tap karein WhatsApp ke liye' : '');
+  if(onTap){ toast.style.cursor = 'pointer'; toast.onclick = onTap; }
   container.appendChild(toast);
   playBeep();
+  const duration = type === 'overdue' ? 10000 : 6000;
   setTimeout(() => {
     toast.classList.add('toast-out');
     setTimeout(() => toast.remove(), 400);
-  }, 6000);
+  }, duration);
 }
 function playBeep(){
   try{

@@ -45,7 +45,7 @@
 
   .topbar{
     background:radial-gradient(ellipse at top, #223028 0%, var(--green-deep) 55%, #0D1410 100%);
-    color:var(--paper);
+    color:#fff;
     padding:28px 20px 30px;
     text-align:center;
     position:relative;
@@ -232,7 +232,7 @@
 
   .summary-box{
     background:var(--green-deep);
-    color:var(--paper);
+    color:var(--ink);
     border-radius:var(--radius);
     padding:20px;
     margin-bottom:16px;
@@ -287,6 +287,23 @@
 
   .loading{ text-align:center; padding:40px 0; color:#9AA5AC; font-size:14px; }
 
+  .camera-modal-bg{
+    position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:50;
+    display:none; align-items:center; justify-content:center; padding:16px;
+  }
+  .camera-modal-bg.show{ display:flex; }
+  .camera-modal{
+    background:var(--paper-2); border-radius:var(--radius); padding:16px;
+    width:100%; max-width:420px;
+  }
+  .camera-preview-wrap{
+    width:100%; aspect-ratio:3/4; background:#000; border-radius:8px;
+    overflow:hidden; margin-bottom:14px; position:relative;
+  }
+  .camera-preview-wrap video, .camera-preview-wrap canvas{
+    width:100%; height:100%; object-fit:cover;
+  }
+
   /* Persistent cart bar */
   #cartBar{
     position:fixed; left:0; right:0; bottom:0; z-index:20;
@@ -327,12 +344,30 @@
   <div class="progress" id="progress"></div>
   <div id="stepArea"><div class="loading"><div class="spinner"></div>Connecting...</div></div>
   <div id="termsNote" style="font-size:11px; color:#9AA5AC; text-align:center; margin-top:24px; padding:0 10px; line-height:1.6;">
-    Yeh online booking system aapki (customer ki) suhulat ke liye banaya gaya hai, taake baar baar call kiye bagair slot book ho sake.<br>
-    <strong>Policy:</strong> Booked time par 15 minute tak intezar kiya jayega. Uske baad slot khud khaali ho jayega aur kisi aur customer ko diya ja sakta hai.
+    Yeh online booking system aapki suhulat ke liye banaya gaya hai, taake baar baar call kiye bagair slot book ho sake.<br>
+    <strong>Policy:</strong> Booked time par <span id="graceMinText">15</span> minute tak intezar kiya jayega. Uske baad slot khud khaali ho jayega aur kisi aur customer ko diya ja sakta hai.
   </div>
 </div>
 
 <div id="cartBar"></div>
+
+<div id="cameraModal" class="camera-modal-bg">
+  <div class="camera-modal">
+    <div id="cameraError" class="err" style="display:none;"></div>
+    <div class="camera-preview-wrap">
+      <video id="cameraVideo" autoplay playsinline muted style="transform:scaleX(-1);"></video>
+      <canvas id="cameraCanvas" style="display:none;"></canvas>
+    </div>
+    <div class="btn-row" id="cameraCaptureBtn">
+      <button class="btn" onclick="captureFromCamera()">📸 Capture</button>
+    </div>
+    <div class="btn-row" id="cameraRetakeRow" style="display:none;">
+      <button class="btn secondary" onclick="retakePhoto()">Retake</button>
+      <button class="btn" onclick="usePhotoFromCamera()">Use This Photo</button>
+    </div>
+    <button class="btn secondary" style="margin-top:8px;" onclick="closeCamera()">Cancel</button>
+  </div>
+</div>
 
 <script>
 /* ================= CONFIG ================= */
@@ -425,6 +460,7 @@ async function init(){
     INIT = await apiGet('/init', {});
     if(INIT.error){ document.getElementById('stepArea').innerHTML = `<div class="err">${INIT.error}</div>`; return; }
     document.getElementById('salonName').textContent = INIT.salonName;
+    document.getElementById('graceMinText').textContent = INIT.noShowGraceMinutes;
     renderProgress();
     renderStep1();
   }catch(err){
@@ -657,10 +693,9 @@ function renderStep5(){
     <input type="tel" id="custPhone" placeholder="03xx-xxxxxxx" value="${state.phone}">
     <label>Your photo (optional — helps staff recognize you)</label>
     <div style="display:flex; gap:10px; margin-bottom:10px;">
-      <button type="button" class="btn secondary" style="flex:1;" onclick="document.getElementById('custPhotoCamera').click()">📷 Take a Photo</button>
+      <button type="button" class="btn secondary" style="flex:1;" onclick="openCamera()">📷 Take a Photo</button>
       <button type="button" class="btn secondary" style="flex:1;" onclick="document.getElementById('custPhotoGallery').click()">🖼️ Choose Photo</button>
     </div>
-    <input type="file" id="custPhotoCamera" accept="image/*" capture="user" style="display:none;">
     <input type="file" id="custPhotoGallery" accept="image/*" style="display:none;">
     <div id="photoPreview"></div>
     <div id="formErr"></div>
@@ -671,44 +706,100 @@ function renderStep5(){
   `;
   document.getElementById('stepArea').innerHTML = html;
 
-  const handlePhoto = function(e){
-    const file = e.target.files[0];
-    if(!file) { return; }
+  function processImageSrc(dataUrl, mirror){
     document.getElementById('photoPreview').innerHTML = `<div style="font-size:12px;color:#9AA5AC;margin-bottom:8px;">Photo tayar ki ja rahi hai...</div>`;
+    const img = new Image();
+    img.onload = function(){
+      // Resize so the longest side is at most 700px, then re-encode as JPEG at 70% quality.
+      const MAX_DIM = 700;
+      let w = img.width, h = img.height;
+      if(w > h && w > MAX_DIM){ h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
+      else if(h > MAX_DIM){ w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
 
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if(mirror){ ctx.translate(w, 0); ctx.scale(-1, 1); }
+      ctx.drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL('image/jpeg', 0.7);
+
+      state.photoBase64 = compressed;
+      document.getElementById('photoPreview').innerHTML = `<img src="${compressed}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;margin-bottom:10px;border:1px solid var(--line);">`;
+    };
+    img.onerror = function(){
+      document.getElementById('photoPreview').innerHTML = `<div class="err">Photo load nahi ho saki, dobara try karein.</div>`;
+    };
+    img.src = dataUrl;
+  }
+
+  const handleGalleryPhoto = function(e){
+    const file = e.target.files[0];
+    if(!file) return;
     const reader = new FileReader();
-    reader.onload = function(ev){
-      const img = new Image();
-      img.onload = function(){
-        // Resize so the longest side is at most 700px, then re-encode as JPEG at 70% quality.
-        // A phone camera photo (often 3-8MB) becomes roughly 50-150KB this way — plenty
-        // clear enough for a staff member to recognize a face, tiny enough to store easily.
-        const MAX_DIM = 700;
-        let w = img.width, h = img.height;
-        if(w > h && w > MAX_DIM){ h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
-        else if(h > MAX_DIM){ w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        const compressed = canvas.toDataURL('image/jpeg', 0.7);
-
-        state.photoBase64 = compressed;
-        document.getElementById('photoPreview').innerHTML = `<img src="${compressed}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;margin-bottom:10px;border:1px solid var(--line);">`;
-      };
-      img.onerror = function(){
-        document.getElementById('photoPreview').innerHTML = `<div class="err">Photo load nahi ho saki, dobara try karein.</div>`;
-      };
-      img.src = ev.target.result;
-    };
-    reader.onerror = function(){
-      document.getElementById('photoPreview').innerHTML = `<div class="err">Photo read nahi ho saki, dobara try karein.</div>`;
-    };
+    reader.onload = ev => processImageSrc(ev.target.result, false);
+    reader.onerror = () => { document.getElementById('photoPreview').innerHTML = `<div class="err">Photo read nahi ho saki, dobara try karein.</div>`; };
     reader.readAsDataURL(file);
   };
-  document.getElementById('custPhotoCamera').addEventListener('change', handlePhoto);
-  document.getElementById('custPhotoGallery').addEventListener('change', handlePhoto);
+  document.getElementById('custPhotoGallery').addEventListener('change', handleGalleryPhoto);
+
+  // Expose for the camera modal's "Use Photo" button
+  window._processImageSrc = processImageSrc;
   renderCartBar();
+}
+
+/* ---------- LIVE CAMERA (forces front/selfie camera reliably, unlike the HTML capture= hint) ---------- */
+let cameraStream = null;
+async function openCamera(){
+  const modal = document.getElementById('cameraModal');
+  modal.classList.add('show');
+  document.getElementById('cameraError').style.display = 'none';
+  document.getElementById('cameraCaptureBtn').style.display = 'block';
+  document.getElementById('cameraRetakeRow').style.display = 'none';
+  const video = document.getElementById('cameraVideo');
+  video.style.display = 'block';
+  document.getElementById('cameraCanvas').style.display = 'none';
+
+  try{
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    video.srcObject = cameraStream;
+    await video.play();
+  }catch(err){
+    document.getElementById('cameraError').style.display = 'block';
+    document.getElementById('cameraError').textContent = 'Camera access nahi mil saka. Browser permission check karein, ya "Choose Photo" se gallery use karein.';
+    document.getElementById('cameraCaptureBtn').style.display = 'none';
+  }
+}
+function closeCamera(){
+  if(cameraStream){ cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+  document.getElementById('cameraModal').classList.remove('show');
+}
+function captureFromCamera(){
+  const video = document.getElementById('cameraVideo');
+  const canvas = document.getElementById('cameraCanvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  // Mirror the capture to match the mirrored preview (feels natural, like a selfie mirror).
+  const ctx = canvas.getContext('2d');
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0);
+
+  video.style.display = 'none';
+  canvas.style.display = 'block';
+  document.getElementById('cameraCaptureBtn').style.display = 'none';
+  document.getElementById('cameraRetakeRow').style.display = 'flex';
+}
+function retakePhoto(){
+  document.getElementById('cameraVideo').style.display = 'block';
+  document.getElementById('cameraCanvas').style.display = 'none';
+  document.getElementById('cameraCaptureBtn').style.display = 'block';
+  document.getElementById('cameraRetakeRow').style.display = 'none';
+}
+function usePhotoFromCamera(){
+  const canvas = document.getElementById('cameraCanvas');
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+  window._processImageSrc(dataUrl, false); // already mirrored during capture, don't double-mirror
+  closeCamera();
 }
 
 function priceSummaryHtml(){
