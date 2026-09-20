@@ -118,9 +118,55 @@ function render(){
     ${dealsSection()}
     ${staffSection()}
     ${pricingSection()}
+    ${dangerZoneSection()}
   `;
   if(DATA.staff.length) renderPricingRows();
   if(DATA.services.length) renderDealServiceChecks();
+}
+
+/* ---------- DANGER ZONE ---------- */
+function dangerZoneSection(){
+  return `
+  <div class="section" style="border:2px solid #8C3B32;">
+    <h2 style="color:#8C3B32;">⚠ Danger Zone</h2>
+    <div style="font-size:13px;color:#6b6558;margin-bottom:12px;">
+      Yeh sab <strong>bookings aur attendance records hamesha ke liye delete</strong> kar dega. Staff, Services, Pricing, Deals, aur Salon Settings ko koi asar nahi padega — wo waise hi rahenge.
+      Client ko dikhane se pehle test data saaf karne ke liye ya naya season shuru karne ke liye use karein.
+    </div>
+    <button class="btn small" style="background:#8C3B32;" onclick="openResetConfirm()">🗑️ Reset All Booking Data</button>
+    <div id="resetConfirmBox" style="display:none;margin-top:12px;padding:14px;background:var(--paper);border:1px solid #8C3B32;border-radius:var(--radius);">
+      <div style="font-size:13px;margin-bottom:8px;font-weight:600;">Confirm karne ke liye apna admin password dobara likhein:</div>
+      <input type="password" id="resetPasswordInput" placeholder="Admin Password" style="width:100%;margin-bottom:8px;">
+      <div id="resetErr"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn small" style="background:#8C3B32;" onclick="confirmResetData()">Haan, Sab Delete Karein</button>
+        <button class="btn small" style="background:transparent;color:var(--ink);border:1px solid var(--line);" onclick="closeResetConfirm()">Cancel</button>
+      </div>
+    </div>
+    <div class="save-msg" id="msg_reset">Data reset ho gaya ✓</div>
+  </div>`;
+}
+function openResetConfirm(){
+  document.getElementById('resetConfirmBox').style.display = 'block';
+  document.getElementById('resetPasswordInput').value = '';
+  document.getElementById('resetErr').innerHTML = '';
+}
+function closeResetConfirm(){
+  document.getElementById('resetConfirmBox').style.display = 'none';
+}
+async function confirmResetData(){
+  const typed = document.getElementById('resetPasswordInput').value;
+  if(typed !== ADMIN_PASSWORD){
+    document.getElementById('resetErr').innerHTML = `<div class="err">Password galat hai, dobara try karein.</div>`;
+    return;
+  }
+  const res = await apiPost('/admin/reset-data', {});
+  if(res.error){
+    document.getElementById('resetErr').innerHTML = `<div class="err">${res.error}</div>`;
+    return;
+  }
+  closeResetConfirm();
+  flash('msg_reset');
 }
 
 /* ---------- SALON INFO ---------- */
@@ -134,11 +180,11 @@ function salonInfoSection(){
     <div class="row" style="margin-top:10px;">
       <div>
         <label>Opening Time</label>
-        <input type="text" id="cfg_OpeningTime" value="${c.OpeningTime||''}" placeholder="11:00">
+        <input type="time" id="cfg_OpeningTime" value="${c.OpeningTime||'11:00'}">
       </div>
       <div>
         <label>Closing Time</label>
-        <input type="text" id="cfg_ClosingTime" value="${c.ClosingTime||''}" placeholder="21:00">
+        <input type="time" id="cfg_ClosingTime" value="${c.ClosingTime||'21:00'}">
       </div>
       <div>
         <label>Slot Interval (min)</label>

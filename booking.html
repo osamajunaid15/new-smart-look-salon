@@ -640,7 +640,7 @@ async function renderStep4(){
   if(res.error === 'ABSENT'){
     html += `<div class="err">${res.message} Koi doosra professional ya "Any Professional" try karein.</div>`;
   } else if(res.error){
-    html += `<div class="err">${res.error}</div>`;
+    html += `<div class="err">${res.message || res.error}</div>`;
   } else if(res.slots.length === 0){
     html += `<div class="empty-msg">Is din koi slot available nahi hai. Koi aur date try karein.</div>`;
   } else {
