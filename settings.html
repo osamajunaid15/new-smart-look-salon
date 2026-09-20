@@ -269,6 +269,8 @@ function staffSection(){
       <input type="tel" class="staff-phone" value="${s.phone||''}" placeholder="Phone (03xx-xxxxxxx)" style="flex:1.2;">
       <input type="number" class="staff-commission" value="${s.commissionPercent!=null?s.commissionPercent:''}" placeholder="Commission %" style="flex:0.8;" min="0" max="100" step="0.5">
       <input type="number" class="staff-salary" value="${s.fixedSalary!=null?s.fixedSalary:''}" placeholder="Fixed Salary Rs." style="flex:0.9;" min="0">
+      <input type="number" class="staff-seedrating" value="${s.seedRating!=null?s.seedRating:''}" placeholder="Starting Rating (1-5)" style="flex:0.9;" min="1" max="5" step="0.1">
+      <input type="number" class="staff-seedcount" value="${s.seedRatingCount!=null?s.seedRatingCount:''}" placeholder="Based on # customers" style="flex:0.9;" min="0">
       <label class="toggle"><input type="checkbox" class="staff-active" ${s.active?'checked':''}> Active</label>
       <button class="btn small" onclick="saveStaff('${s.id}')">Save</button>
       <div style="width:100%;">
@@ -280,7 +282,8 @@ function staffSection(){
   <div class="section">
     <h2>Staff</h2>
     <div style="font-size:12px;color:#6b6558;margin-bottom:12px;">
-      Phone number se is staff ko unki booking ke liye WhatsApp notify kiya ja sakta hai. Commission % aur Fixed Salary dono optional hain — dono staff ke apne dashboard (staff.html) pe unhe dikhengi.
+      Phone number se is staff ko unki booking ke liye WhatsApp notify kiya ja sakta hai. Commission % aur Fixed Salary dono optional hain — dono staff ke apne dashboard (staff.html) pe unhe dikhengi.<br><br>
+      <strong>Starting Rating (optional):</strong> Agar salon pehle se chal raha hai aur staff ki asal reputation hai, yahan daal dein (jese 4.5 stars, "50 customers" ke hisaab se). Naye customer ratings aate hi yeh khud mix ho kar update hoti rahegi — jitni zyada asal ratings aayengi, starting number utna kam asar dikhayega.
     </div>
     ${rows}
     <div class="item-row" style="margin-top:10px;border-top:2px solid var(--line);padding-top:14px;">
@@ -298,6 +301,8 @@ async function saveStaff(id){
     phone: row.querySelector('.staff-phone').value,
     commissionPercent: row.querySelector('.staff-commission').value,
     fixedSalary: row.querySelector('.staff-salary').value,
+    seedRating: row.querySelector('.staff-seedrating').value,
+    seedRatingCount: row.querySelector('.staff-seedcount').value,
     active: row.querySelector('.staff-active').checked
   });
   flash('msg_staff');
